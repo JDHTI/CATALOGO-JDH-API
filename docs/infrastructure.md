@@ -16,7 +16,7 @@ pnpm start:dev
 | ----------------- | ----------- | -------------------------------------------------------- |
 | `postgres`        | `5435`      | BD propia del catálogo (Prisma). `docker/env/postgres.env` |
 | `redis`           | `6380`      | Caché, con `requirepass`. `docker/env/redis.env`          |
-| `redis-commander` | `8081`      | UI web (`admin`/`admin`). `docker/env/redis-commander.env` |
+| `redis-commander` | `8081`      | UI web (usuario `jdh_catalogo`). `docker/env/redis-commander.env` |
 | `minio`           | `9000`      | API S3-compatible. `docker/env/minio.env`                 |
 | `minio` (consola) | `9001`      | UI web de MinIO                                           |
 | `minio-init`      | —           | Job de un solo uso: crea el bucket `jdh-catalogo`         |
@@ -24,6 +24,25 @@ pnpm start:dev
 El Datawarehouse **no** se levanta en compose: es un Postgres externo y es
 **opcional**. Sus credenciales se configuran con las variables `DWH_*` del
 `.env`; ninguna está validada ni es obligatoria para arrancar.
+
+## Credenciales de desarrollo
+
+Cada servicio tiene su propia contraseña generada; no se comparten entre
+servicios. Están en los `*.env.example`, que se copian tal cual — no hay que
+rellenar nada a mano.
+
+Como una misma credencial aparece en dos sitios, si cambias alguna hay que
+tocar ambos:
+
+| Credencial      | Se define en                    | Se consume en                        |
+| --------------- | ------------------------------- | ------------------------------------ |
+| Postgres        | `docker/env/postgres.env`       | `DATABASE_URL` del `.env`            |
+| Redis           | `docker/env/redis.env`          | `REDIS_PASSWORD` del `.env` **y** `REDIS_HOSTS` de `redis-commander.env` |
+| MinIO           | `docker/env/minio.env`          | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` del `.env` |
+| UI de Commander | `docker/env/redis-commander.env`| solo la UI                           |
+
+Son credenciales locales de desarrollo, por eso van versionadas en los
+`.example`. Para otros entornos, genera unas nuevas y no las versiones.
 
 ## Arquitectura de carpetas
 
