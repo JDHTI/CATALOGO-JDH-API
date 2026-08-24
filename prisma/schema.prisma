@@ -6,6 +6,10 @@
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
+  // NestJS compila a CommonJS; sin esto el cliente se genera como ESM
+  // y falla al ejecutarse desde dist.
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
 }
 
 datasource db {
