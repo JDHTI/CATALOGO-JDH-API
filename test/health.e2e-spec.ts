@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 
 import { AppModule } from './../src/app.module';
+import type { HealthReport } from './../src/modules/health/health.service';
 
 describe('HealthController (e2e)', () => {
   let app: INestApplication<App>;
@@ -26,14 +27,16 @@ describe('HealthController (e2e)', () => {
       .get('/health')
       .expect(200);
 
-    expect(response.body).toMatchObject({
-      status: expect.stringMatching(/^(ok|degraded)$/),
-      dependencies: {
-        database: expect.stringMatching(/^(up|down)$/),
-        datawarehouse: expect.stringMatching(/^(up|down)$/),
-        cache: expect.stringMatching(/^(up|down)$/),
-        storage: expect.stringMatching(/^(up|down)$/),
-      },
-    });
+    const body = response.body as HealthReport;
+
+    expect(body.status).toMatch(/^(ok|degraded)$/);
+    for (const dependency of [
+      'database',
+      'datawarehouse',
+      'cache',
+      'storage',
+    ] as const) {
+      expect(body.dependencies[dependency]).toMatch(/^(up|down|disabled)$/);
+    }
   });
 });

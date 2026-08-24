@@ -61,25 +61,29 @@ export class EnvironmentVariables {
   DATABASE_LOG_QUERIES: boolean = false;
 
   // ------------------------------------------------------------- datawarehouse
+  // Todas opcionales: el DWH solo se necesita para importar/sincronizar datos,
+  // no para arrancar la API. Sin `DWH_HOST` la conexión queda deshabilitada.
   @IsString()
-  @IsNotEmpty()
-  DWH_HOST!: string;
+  @IsOptional()
+  DWH_HOST?: string;
 
   @IsInt()
   @Min(1)
   @Max(65535)
-  DWH_PORT!: number;
+  @IsOptional()
+  DWH_PORT: number = 5432;
 
   @IsString()
-  @IsNotEmpty()
-  DWH_DATABASE!: string;
+  @IsOptional()
+  DWH_DATABASE?: string;
 
   @IsString()
-  @IsNotEmpty()
-  DWH_USER!: string;
+  @IsOptional()
+  DWH_USER?: string;
 
   @IsString()
-  DWH_PASSWORD!: string;
+  @IsOptional()
+  DWH_PASSWORD?: string;
 
   @IsString()
   @IsOptional()

@@ -21,8 +21,9 @@ pnpm start:dev
 | `minio` (consola) | `9001`      | UI web de MinIO                                           |
 | `minio-init`      | —           | Job de un solo uso: crea el bucket `jdh-catalogo`         |
 
-El Datawarehouse **no** se levanta en compose: es un Postgres externo. Sus
-credenciales se configuran con las variables `DWH_*` del `.env`.
+El Datawarehouse **no** se levanta en compose: es un Postgres externo y es
+**opcional**. Sus credenciales se configuran con las variables `DWH_*` del
+`.env`; ninguna está validada ni es obligatoria para arrancar.
 
 ## Arquitectura de carpetas
 
@@ -84,8 +85,20 @@ const redis = configService.getOrThrow<RedisConfig>(REDIS_CONFIG);
 - `stream<T>(sql, params, batchSize)` — recorre resultados grandes por lotes.
 - `withClient(handler)` — cliente dedicado para cursores o sesiones.
 
-Si el DWH no está disponible al arrancar se registra un warning pero la API
-sigue en pie: el catálogo debe poder servir sin la sincronización.
+### Es opcional
+
+El DWH solo se necesita para importar/sincronizar datos, así que **ninguna
+variable `DWH_*` se valida al arrancar**:
+
+- Sin `DWH_HOST` no se crea ningún pool. `service.enabled` es `false`,
+  `/health` reporta `"datawarehouse": "disabled"` (sin degradar el estado) y
+  cualquier llamada a `query`/`withClient` lanza un `503` explícito pidiendo
+  configurar las `DWH_*`.
+- Con `DWH_HOST` pero el servidor caído, se registra un warning al arrancar y la
+  API sigue en pie; `/health` lo marca `down` y el estado global pasa a
+  `degraded`.
+
+El catálogo debe poder servir sin la sincronización.
 
 ## Prisma
 
@@ -102,7 +115,8 @@ Jest se ejecuta con `node --experimental-vm-modules` (ya incluido en los scripts
 
 ```bash
 curl http://localhost:3000/api/v1/health
-# {"status":"ok","dependencies":{"database":"up","datawarehouse":"up","cache":"up","storage":"up"},...}
+# {"status":"ok","dependencies":{"database":"up","datawarehouse":"disabled",
+#  "cache":"up","storage":"up"},...}
 ```
 
 Swagger queda en `http://localhost:3000/api/docs` (solo fuera de producción).

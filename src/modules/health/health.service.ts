@@ -5,7 +5,8 @@ import { PrismaService } from '@infrastructure/database';
 import { DatawarehouseService } from '@infrastructure/datawarehouse';
 import { StorageService } from '@infrastructure/storage';
 
-export type DependencyStatus = 'up' | 'down';
+/** `disabled` = dependencia opcional no configurada; no degrada el estado. */
+export type DependencyStatus = 'up' | 'down' | 'disabled';
 
 export interface HealthReport {
   status: 'ok' | 'degraded';
@@ -23,9 +24,11 @@ export class HealthService {
   ) {}
 
   async check(): Promise<HealthReport> {
-    const checks = {
+    const checks: Record<string, () => Promise<boolean> | null> = {
       database: () => this.prisma.healthCheck(),
-      datawarehouse: () => this.datawarehouse.healthCheck(),
+      // El DWH es opcional: si no está configurado se reporta `disabled`.
+      datawarehouse: () =>
+        this.datawarehouse.enabled ? this.datawarehouse.healthCheck() : null,
       cache: () => this.cache.healthCheck(),
       storage: () => this.storage.healthCheck(),
     };
@@ -33,7 +36,9 @@ export class HealthService {
     const entries = await Promise.all(
       Object.entries(checks).map(async ([name, probe]) => {
         try {
-          return [name, (await probe()) ? 'up' : 'down'] as const;
+          const result = probe();
+          if (result === null) return [name, 'disabled'] as const;
+          return [name, (await result) ? 'up' : 'down'] as const;
         } catch {
           return [name, 'down'] as const;
         }
@@ -46,7 +51,7 @@ export class HealthService {
     >;
 
     return {
-      status: Object.values(dependencies).every((s) => s === 'up')
+      status: Object.values(dependencies).every((s) => s !== 'down')
         ? 'ok'
         : 'degraded',
       dependencies,

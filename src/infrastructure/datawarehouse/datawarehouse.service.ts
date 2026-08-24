@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleDestroy,
   OnModuleInit,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool, type PoolClient, type QueryResultRow } from 'pg';
@@ -18,18 +19,27 @@ import {
  * Deliberadamente separada de Prisma: el DWH es un origen externo del que solo
  * se leen datos para sincronizarlos hacia el catálogo. No se versiona su schema
  * ni se ejecutan migraciones sobre él.
+ *
+ * Es opcional. Sin `DWH_HOST` no se crea ningún pool y el servicio queda
+ * deshabilitado: la API arranca con normalidad y solo fallan las operaciones
+ * que dependen explícitamente del DWH.
  */
 @Injectable()
 export class DatawarehouseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatawarehouseService.name);
-  private readonly pool: Pool;
+  private readonly pool: Pool | null;
   private readonly schema: string;
 
   constructor(config: ConfigService) {
     const dwh = config.getOrThrow<DatawarehouseConfig>(DATAWAREHOUSE_CONFIG);
     this.schema = dwh.schema;
 
-    this.pool = new Pool({
+    if (!dwh.enabled) {
+      this.pool = null;
+      return;
+    }
+
+    const pool = new Pool({
       host: dwh.host,
       port: dwh.port,
       database: dwh.database,
@@ -44,12 +54,26 @@ export class DatawarehouseService implements OnModuleInit, OnModuleDestroy {
       application_name: 'jdh-catalogo-api',
     });
 
-    this.pool.on('error', (error) =>
+    pool.on('error', (error) =>
       this.logger.error(`Error en el pool del datawarehouse: ${error.message}`),
     );
+
+    this.pool = pool;
+  }
+
+  /** `false` cuando no hay `DWH_HOST` configurado. */
+  get enabled(): boolean {
+    return this.pool !== null;
   }
 
   async onModuleInit(): Promise<void> {
+    if (!this.pool) {
+      this.logger.log(
+        'Datawarehouse deshabilitado (sin DWH_HOST); solo se necesita para importar datos',
+      );
+      return;
+    }
+
     try {
       await this.query('SELECT 1');
       this.logger.log(
@@ -64,7 +88,17 @@ export class DatawarehouseService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.pool.end();
+    await this.pool?.end();
+  }
+
+  /** Pool activo, o error explícito si el DWH no está configurado. */
+  private requirePool(): Pool {
+    if (!this.pool) {
+      throw new ServiceUnavailableException(
+        'El datawarehouse no está configurado. Define las variables DWH_* en el .env.',
+      );
+    }
+    return this.pool;
   }
 
   /** Ejecuta un SELECT parametrizado y devuelve las filas tipadas. */
@@ -73,7 +107,7 @@ export class DatawarehouseService implements OnModuleInit, OnModuleDestroy {
     params: readonly unknown[] = [],
   ): Promise<T[]> {
     const started = Date.now();
-    const result = await this.pool.query<T>(sql, params as unknown[]);
+    const result = await this.requirePool().query<T>(sql, params as unknown[]);
     this.logger.debug(
       `Consulta DWH ejecutada en ${Date.now() - started}ms (${result.rowCount} filas)`,
     );
@@ -115,7 +149,7 @@ export class DatawarehouseService implements OnModuleInit, OnModuleDestroy {
 
   /** Toma un cliente dedicado del pool (por ejemplo, para cursores o sesiones). */
   async withClient<T>(handler: (client: PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.pool.connect();
+    const client = await this.requirePool().connect();
     try {
       return await handler(client);
     } finally {
