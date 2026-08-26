@@ -4,8 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   // NestJS compila a CommonJS; sin esto el cliente se genera como ESM
   // y falla al ejecutarse desde dist.
   runtime      = "nodejs"
@@ -14,4 +14,189 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// =============================================================================
+// CATÁLOGO DE PRODUCTOS
+//
+// Los datos maestros provienen de la vista `consumo.productos` del DWH y se
+// sincronizan con un full-extract + upsert idempotente (ver docs/products-sync.md).
+// =============================================================================
+
+/// Proveedor del catálogo.
+///
+/// OJO: "proveedor" aquí es una CLASIFICACIÓN comercial/de mercadeo del ERP
+/// (criterio mayor t106), NO una identidad jurídica: no existe NIT ni datos
+/// fiscales. Es el criterio de agrupación de productos por proveedor que usa
+/// el catálogo (~645 valores distintos).
+model Supplier {
+  id            Int      @id @default(autoincrement())
+  /// Código de la clasificación en el ERP (← cod_proveedor del DWH).
+  code          String   @unique
+  /// Nombre de la clasificación (← proveedor del DWH).
+  name          String
+  active        Boolean  @default(true)
+  /// Logo comercial: key del objeto en el bucket y URL absoluta servible.
+  /// El sync del DWH no los toca; se cargan aparte y quedan null hasta entonces.
+  logoObjectKey String?  @map("logo_object_key")
+  logoUrl       String?  @map("logo_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@map("suppliers")
+}
+
+/// Fabricante (← fabricante del DWH, texto normalizado con trim).
+model Manufacturer {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  products Product[]
+
+  @@map("manufacturers")
+}
+
+/// Marca (← marca del DWH, texto normalizado con trim).
+model Brand {
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  /// Logo comercial: key del objeto en el bucket y URL absoluta servible.
+  /// El sync del DWH no los toca; se cargan aparte y quedan null hasta entonces.
+  logoObjectKey String? @map("logo_object_key")
+  logoUrl       String? @map("logo_url")
+
+  products Product[]
+
+  @@map("brands")
+}
+
+/// Categoría del catálogo. Solo esquema base: la categorización de productos
+/// se hará en una fase posterior (el sync NO la puebla todavía).
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  subcategories Subcategory[]
+  products      Product[]
+
+  @@map("categories")
+}
+
+/// Subcategoría, única por nombre dentro de su categoría.
+model Subcategory {
+  id         Int    @id @default(autoincrement())
+  name       String
+  categoryId Int    @map("category_id")
+
+  category Category  @relation(fields: [categoryId], references: [id])
+  products Product[]
+
+  @@unique([name, categoryId])
+  @@map("subcategories")
+}
+
+/// Producto del catálogo.
+model Product {
+  id Int @id @default(autoincrement())
+
+  /// Hash surrogate estable del DWH (producto_key). Clave del upsert del sync.
+  productoKey      String  @unique @map("producto_key")
+  /// SKU del ERP. Indexado pero NO único: puede repetirse entre compañías.
+  sku              String
+  /// Nombre comercial (← descripcion del DWH).
+  name             String
+  /// Descripción corta del ERP (← sku_proveedor del DWH; NO es un código).
+  shortDescription String? @map("short_description")
+
+  // Clasificación cruda del DWH, conservada tal cual para trazabilidad.
+  tipoItem String? @map("tipo_item")
+  origen   String?
+  linea    String?
+  sublinea String?
+  grupo    String?
+
+  pesoKg        Decimal? @map("peso_kg") @db.Decimal(12, 3)
+  factorEmpaque Decimal? @map("factor_empaque") @db.Decimal(12, 3)
+
+  /// ← estado del DWH ('A' → true, 'I' → false). Los productos que dejan de
+  /// venir en la extracción se desactivan (soft-deactivate), nunca se borran.
+  active Boolean @default(true)
+
+  supplierId     Int  @map("supplier_id")
+  brandId        Int? @map("brand_id")
+  manufacturerId Int? @map("manufacturer_id")
+  categoryId     Int? @map("category_id")
+  subcategoryId  Int? @map("subcategory_id")
+
+  // Precios: el DWH NO los provee; quedan nullable y el sync no los toca.
+  price          Decimal?  @db.Decimal(14, 2)
+  priceCurrency  String?   @default("COP") @map("price_currency")
+  priceUpdatedAt DateTime? @map("price_updated_at")
+
+  /// Fecha de creación reportada por el DWH (← fecha_creacion).
+  dwhCreatedAt DateTime? @map("dwh_created_at")
+  /// Última vez que el sync tocó (o confirmó) este producto.
+  syncedAt     DateTime  @map("synced_at")
+  /// Hash de los campos mapeados desde el DWH; permite saltar updates
+  /// cuando la fila de origen no cambió.
+  sourceHash   String    @map("source_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  supplier     Supplier       @relation(fields: [supplierId], references: [id])
+  brand        Brand?         @relation(fields: [brandId], references: [id])
+  manufacturer Manufacturer?  @relation(fields: [manufacturerId], references: [id])
+  category     Category?      @relation(fields: [categoryId], references: [id])
+  subcategory  Subcategory?   @relation(fields: [subcategoryId], references: [id])
+  images       ProductImage[]
+
+  @@index([supplierId])
+  @@index([brandId])
+  @@index([active])
+  @@index([sku])
+  @@map("products")
+}
+
+/// Imagen de producto. Los binarios viven en el bucket S3/MinIO ya
+/// configurado; aquí solo se guarda la referencia. Se poblarán después.
+model ProductImage {
+  id        Int      @id @default(autoincrement())
+  productId Int      @map("product_id")
+  /// Key del objeto en el bucket S3.
+  objectKey String   @map("object_key")
+  url       String?
+  alt       String?
+  position  Int      @default(0)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+/// Registro de cada ejecución de sincronización, para observabilidad.
+model SyncRun {
+  id          Int       @id @default(autoincrement())
+  /// Qué se sincronizó (p. ej. 'products').
+  type        String
+  /// 'running' | 'success' | 'error'
+  status      String
+  startedAt   DateTime  @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+  totalRead   Int?      @map("total_read")
+  inserted    Int?
+  updated     Int?
+  deactivated Int?
+  unchanged   Int?
+  error       String?
+
+  @@map("sync_runs")
 }

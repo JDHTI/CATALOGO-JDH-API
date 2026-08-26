@@ -140,6 +140,23 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     return value;
   }
 
+  /** Alias semántico de `wrap`: devuelve el valor en caché o lo calcula. */
+  async getOrSet<T>(
+    key: string,
+    factory: () => Promise<T>,
+    ttlSeconds?: number,
+  ): Promise<T> {
+    return this.wrap(key, factory, ttlSeconds);
+  }
+
+  /**
+   * Invalida todas las claves que empiecen por el prefijo dado.
+   * Internamente usa SCAN (nunca KEYS). Devuelve cuántas claves se borraron.
+   */
+  async invalidateByPrefix(prefix: string): Promise<number> {
+    return this.delByPattern(`${prefix}*`);
+  }
+
   async healthCheck(): Promise<boolean> {
     return (await this.client.ping()) === 'PONG';
   }

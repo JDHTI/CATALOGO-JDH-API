@@ -4,8 +4,10 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 import appConfig from './app.config';
 import databaseConfig from './database.config';
 import datawarehouseConfig from './datawarehouse.config';
+import ratelimitConfig from './ratelimit.config';
 import redisConfig from './redis.config';
 import storageConfig from './storage.config';
+import syncConfig from './sync.config';
 import { validateEnv } from './env.validation';
 
 /**
@@ -23,8 +25,10 @@ import { validateEnv } from './env.validation';
         appConfig,
         databaseConfig,
         datawarehouseConfig,
+        ratelimitConfig,
         redisConfig,
         storageConfig,
+        syncConfig,
       ],
       validate: validateEnv,
     }),

@@ -138,6 +138,30 @@ export class EnvironmentVariables {
   @IsOptional()
   REDIS_DEFAULT_TTL: number = 300;
 
+  // ---------------------------------------------------------- sincronizaciones
+  /** Expresión cron de la sincronización de productos desde el DWH. */
+  @IsString()
+  @IsOptional()
+  SYNC_PRODUCTS_CRON: string = '0 2 * * *';
+
+  /** Permite apagar la sincronización programada. */
+  @IsBoolean()
+  @IsOptional()
+  SYNC_PRODUCTS_ENABLED: boolean = true;
+
+  // ------------------------------------------------------------- rate limiting
+  /** Tamaño de la ventana de rate limiting, en segundos. */
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  RATE_LIMIT_TTL: number = 60;
+
+  /** Máximo de peticiones por IP dentro de la ventana. */
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  RATE_LIMIT_MAX: number = 100;
+
   // ------------------------------------------------------------------- storage
   @IsUrl({ require_tld: false })
   S3_ENDPOINT!: string;
@@ -177,12 +201,15 @@ const NUMERIC_KEYS = [
   'REDIS_PORT',
   'REDIS_DB',
   'REDIS_DEFAULT_TTL',
+  'RATE_LIMIT_TTL',
+  'RATE_LIMIT_MAX',
 ] as const;
 
 const BOOLEAN_KEYS = [
   'DATABASE_LOG_QUERIES',
   'DWH_SSL',
   'S3_FORCE_PATH_STYLE',
+  'SYNC_PRODUCTS_ENABLED',
 ] as const;
 
 export function validateEnv(
