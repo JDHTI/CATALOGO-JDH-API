@@ -138,6 +138,19 @@ export class EnvironmentVariables {
   @IsOptional()
   REDIS_DEFAULT_TTL: number = 300;
 
+  // ------------------------------------------------------------- rate limiting
+  /** Tamaño de la ventana de rate limiting, en segundos. */
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  RATE_LIMIT_TTL: number = 60;
+
+  /** Máximo de peticiones por IP dentro de la ventana. */
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  RATE_LIMIT_MAX: number = 100;
+
   // ------------------------------------------------------------------- storage
   @IsUrl({ require_tld: false })
   S3_ENDPOINT!: string;
@@ -177,6 +190,8 @@ const NUMERIC_KEYS = [
   'REDIS_PORT',
   'REDIS_DB',
   'REDIS_DEFAULT_TTL',
+  'RATE_LIMIT_TTL',
+  'RATE_LIMIT_MAX',
 ] as const;
 
 const BOOLEAN_KEYS = [
