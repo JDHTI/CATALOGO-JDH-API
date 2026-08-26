@@ -40,6 +40,22 @@ No hay endpoint HTTP de subida **a propósito**: el catálogo es público y aún
 tiene capa de autenticación. Añadirlo sin auth permitiría a cualquiera
 sobrescribir la imagen de marca del catálogo.
 
+## Cómo deben venir los archivos
+
+Requisitos verificados en navegador contra la UI del catálogo:
+
+- **Recortados al contenido.** Se pintan con `object-contain` dentro de una
+  caja cuadrada de 48–56 px, así que cualquier proporción sirve; lo que se ve
+  mal es un logo con mucho margen en blanco incorporado, porque queda diminuto
+  dentro de su hueco.
+- **SVG minificado.** Los SVG no pasan por el optimizador de imágenes de la UI
+  (Next los marca como `unoptimized` y el navegador los pide directos al
+  bucket), así que viajan con su peso original: no hay recompresión que los
+  rescate. Los formatos raster sí se optimizan.
+- Fondo transparente cuando el formato lo permita.
+
+Los cuatro formatos admitidos funcionan en la UI sin configuración adicional.
+
 ## Qué logos vale la pena pedir
 
 El catálogo es de menaje, aseo y dotación. De los 9.042 productos activos, el
