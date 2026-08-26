@@ -11,6 +11,7 @@
     "docker:down": "docker compose down",
     "docker:reset": "docker compose down -v",
     "docker:logs": "docker compose logs -f",
+    "logos:upload": "nest build && node dist/src/modules/logos/upload-logo.cli",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
