@@ -7,6 +7,7 @@ import datawarehouseConfig from './datawarehouse.config';
 import ratelimitConfig from './ratelimit.config';
 import redisConfig from './redis.config';
 import storageConfig from './storage.config';
+import syncConfig from './sync.config';
 import { validateEnv } from './env.validation';
 
 /**
@@ -27,6 +28,7 @@ import { validateEnv } from './env.validation';
         ratelimitConfig,
         redisConfig,
         storageConfig,
+        syncConfig,
       ],
       validate: validateEnv,
     }),

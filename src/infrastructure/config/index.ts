@@ -4,5 +4,6 @@ export * from './datawarehouse.config';
 export * from './ratelimit.config';
 export * from './redis.config';
 export * from './storage.config';
+export * from './sync.config';
 export * from './env.validation';
 export * from './config.module';
