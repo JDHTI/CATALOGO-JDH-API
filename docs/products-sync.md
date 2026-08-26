@@ -28,7 +28,7 @@ La fuente es la vista **`consumo.productos`** del datawarehouse Postgres
 | --------------------- | ---------------------------------- | -------------------------------------------------------- |
 | `producto_key`        | `productoKey`                      | Hash surrogate estable del DWH. **Clave del upsert**.     |
 | `sku`                 | `sku`                              | Indexado, **no único** (se repite entre compañías).       |
-| `descripcion`         | `name`                             | Nombre comercial (fallback: el sku).                      |
+| `descripcion`         | `name`                             | Nombre comercial (fallback: el sku). Se recortan los símbolos iniciales del ERP (`*Vaso 7oz` → `Vaso 7oz`); el resto se conserva intacto porque lleva unidades y códigos. |
 | `sku_proveedor`       | `shortDescription`                 | **Descripción corta del ERP, NO un código de proveedor.** |
 | `fecha_creacion`      | `dwhCreatedAt`                     |                                                           |
 | `fecha_actualizacion` | — (no se usa)                      | Siempre NULL en la vista.                                 |

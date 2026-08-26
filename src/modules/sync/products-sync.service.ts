@@ -361,6 +361,22 @@ export class ProductsSyncService implements OnModuleInit {
     }
   }
 
+  /**
+   * Quita los símbolos de adorno del INICIO del nombre que arrastra el ERP
+   * ('*Vaso 7oz Nescafe' → 'Vaso 7oz Nescafe').
+   *
+   * Solo recorta al principio y solo caracteres que no son letra ni dígito: el
+   * resto del texto se conserva intacto a propósito, porque lleva unidades,
+   * medidas y códigos de fabricante que cualquier normalización rompería
+   * ('18ux8.5g', 'Confitero14"', 'FGWHB14EBK').
+   */
+  static cleanName(value: string): string {
+    return value
+      .trim()
+      .replace(/^[^\p{L}\p{N}]+/u, '')
+      .trim();
+  }
+
   /** Mapea una fila del DWH a los campos del producto del catálogo. */
   private mapRow(
     row: DwhProductRow,
@@ -374,7 +390,7 @@ export class ProductsSyncService implements OnModuleInit {
     return {
       productoKey: row.producto_key,
       sku,
-      name: row.descripcion?.trim() || sku,
+      name: ProductsSyncService.cleanName(row.descripcion ?? '') || sku,
       shortDescription: row.sku_proveedor?.trim() || null,
       tipoItem: row.tipo_item?.trim() || null,
       origen: row.origen?.trim() || null,

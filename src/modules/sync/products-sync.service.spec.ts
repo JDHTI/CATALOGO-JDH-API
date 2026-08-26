@@ -102,6 +102,39 @@ const buildService = (
   return { service, invalidateByPrefix };
 };
 
+describe('ProductsSyncService.cleanName', () => {
+  it('quita los símbolos de adorno del inicio', () => {
+    expect(ProductsSyncService.cleanName('*Vaso 7oz Nescafe Alegria')).toBe(
+      'Vaso 7oz Nescafe Alegria',
+    );
+    expect(ProductsSyncService.cleanName('  **  Esponja Hexagonal')).toBe(
+      'Esponja Hexagonal',
+    );
+  });
+
+  it('no toca el resto del nombre ni recorta caracteres legítimos', () => {
+    // Unidades, medidas, comillas de pulgada y códigos del ERP se conservan.
+    expect(
+      ProductsSyncService.cleanName("Trident Yerbabuena 5s' 18ux8.5g"),
+    ).toBe("Trident Yerbabuena 5s' 18ux8.5g");
+    expect(ProductsSyncService.cleanName('Espatula Confitero14" Tramon')).toBe(
+      'Espatula Confitero14" Tramon',
+    );
+    // Un dígito o una letra inicial NO es un adorno: se respeta.
+    expect(ProductsSyncService.cleanName('1/4 Rodaja Piña Deshidratada')).toBe(
+      '1/4 Rodaja Piña Deshidratada',
+    );
+    expect(ProductsSyncService.cleanName('Ñame Criollo x1kg')).toBe(
+      'Ñame Criollo x1kg',
+    );
+  });
+
+  it('devuelve cadena vacía si el nombre era solo símbolos', () => {
+    // El llamador cae entonces al sku, nunca deja el producto sin nombre.
+    expect(ProductsSyncService.cleanName('***')).toBe('');
+  });
+});
+
 describe('ProductsSyncService', () => {
   it('falla con mensaje claro si el DWH está deshabilitado', async () => {
     const prisma = buildPrisma();
