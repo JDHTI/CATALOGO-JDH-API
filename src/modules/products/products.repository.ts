@@ -43,6 +43,7 @@ export class ProductsRepository {
     const where: Prisma.ProductWhereInput = {
       active: true,
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
+      ...(query.brandId ? { brandId: query.brandId } : {}),
       ...(query.search
         ? {
             OR: [

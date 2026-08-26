@@ -19,4 +19,13 @@ export class ListProductsQueryDto extends PaginationQueryDto {
   @Min(1)
   @IsOptional()
   supplierId?: number;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por marca (combinable con supplierId y search)',
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  brandId?: number;
 }
