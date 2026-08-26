@@ -5,4 +5,5 @@ export * from './filters/all-exceptions.filter';
 export * from './guards/rate-limit.guard';
 export * from './interceptors/http-cache.interceptor';
 export * from './interceptors/logging.interceptor';
+export * from './middlewares/request-id.middleware';
 export * from './ratelimit';
