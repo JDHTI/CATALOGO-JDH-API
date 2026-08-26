@@ -9,6 +9,8 @@ import type { HealthReport } from './../src/modules/health/health.service';
 describe('HealthController (e2e)', () => {
   let app: INestApplication<App>;
 
+  // ts-jest compila el grafo completo de la app en frío; en Windows puede
+  // superar con holgura los 5s por defecto del hook.
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -16,7 +18,7 @@ describe('HealthController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-  });
+  }, 60_000);
 
   afterAll(async () => {
     await app.close();
