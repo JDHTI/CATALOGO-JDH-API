@@ -15,6 +15,7 @@ export class SuppliersService {
       id: supplier.id,
       nombre: supplier.name,
       totalProductos: supplier.activeProducts,
+      logoUrl: supplier.logoUrl,
     }));
   }
 }

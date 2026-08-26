@@ -7,6 +7,7 @@ export interface BrandWithActiveCount {
   id: number;
   name: string;
   activeProducts: number;
+  logoUrl: string | null;
 }
 
 /** Acceso a datos de marcas. */
@@ -33,6 +34,7 @@ export class BrandsRepository {
       select: {
         id: true,
         name: true,
+        logoUrl: true,
         _count: { select: { products: { where: productFilter } } },
       },
     });
@@ -41,6 +43,7 @@ export class BrandsRepository {
       id: brand.id,
       name: brand.name,
       activeProducts: brand._count.products,
+      logoUrl: brand.logoUrl,
     }));
   }
 }

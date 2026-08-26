@@ -18,6 +18,7 @@ export class BrandsService {
       id: brand.id,
       nombre: brand.name,
       totalProductos: brand.activeProducts,
+      logoUrl: brand.logoUrl,
     }));
   }
 }

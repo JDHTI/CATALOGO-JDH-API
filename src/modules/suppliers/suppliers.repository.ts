@@ -6,6 +6,7 @@ export interface SupplierWithActiveCount {
   id: number;
   name: string;
   activeProducts: number;
+  logoUrl: string | null;
 }
 
 /** Acceso a datos de proveedores. */
@@ -24,6 +25,7 @@ export class SuppliersRepository {
       select: {
         id: true,
         name: true,
+        logoUrl: true,
         _count: { select: { products: { where: { active: true } } } },
       },
     });
@@ -32,6 +34,7 @@ export class SuppliersRepository {
       id: supplier.id,
       name: supplier.name,
       activeProducts: supplier._count.products,
+      logoUrl: supplier.logoUrl,
     }));
   }
 }

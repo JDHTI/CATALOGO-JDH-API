@@ -13,4 +13,12 @@ export class SupplierResponseDto {
     description: 'Cantidad de productos activos del proveedor',
   })
   totalProductos!: number;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'http://localhost:9000/jdh-catalogo/logos/proveedores/acme.png',
+    description: 'URL absoluta del logo, o null si aún no se ha cargado',
+  })
+  logoUrl!: string | null;
 }
