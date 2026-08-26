@@ -30,14 +30,18 @@ datasource db {
 /// fiscales. Es el criterio de agrupación de productos por proveedor que usa
 /// el catálogo (~645 valores distintos).
 model Supplier {
-  id        Int      @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   /// Código de la clasificación en el ERP (← cod_proveedor del DWH).
-  code      String   @unique
+  code          String   @unique
   /// Nombre de la clasificación (← proveedor del DWH).
-  name      String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  name          String
+  active        Boolean  @default(true)
+  /// Logo comercial: key del objeto en el bucket y URL absoluta servible.
+  /// El sync del DWH no los toca; se cargan aparte y quedan null hasta entonces.
+  logoObjectKey String?  @map("logo_object_key")
+  logoUrl       String?  @map("logo_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   products Product[]
 
@@ -56,8 +60,12 @@ model Manufacturer {
 
 /// Marca (← marca del DWH, texto normalizado con trim).
 model Brand {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  /// Logo comercial: key del objeto en el bucket y URL absoluta servible.
+  /// El sync del DWH no los toca; se cargan aparte y quedan null hasta entonces.
+  logoObjectKey String? @map("logo_object_key")
+  logoUrl       String? @map("logo_url")
 
   products Product[]
 
