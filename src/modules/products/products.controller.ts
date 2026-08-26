@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Query,
@@ -49,7 +50,16 @@ export class ProductsController {
   @ApiOperation({ summary: 'Detalle de un producto activo' })
   @ApiOkResponse({ type: ProductResponseDto })
   @ApiNotFoundResponse({ description: 'No existe o está inactivo' })
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<ProductResponseDto> {
+  findOne(
+    // Un id malformado equivale a "no existe": el catálogo responde 404, no 400.
+    @Param(
+      'id',
+      new ParseIntPipe({
+        exceptionFactory: () => new NotFoundException('Producto no encontrado'),
+      }),
+    )
+    id: number,
+  ): Promise<ProductResponseDto> {
     return this.products.findOne(id);
   }
 }
