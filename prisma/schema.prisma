@@ -163,13 +163,35 @@ model Product {
 }
 
 /// Imagen de producto. Los binarios viven en el bucket S3/MinIO ya
-/// configurado; aquí solo se guarda la referencia. Se poblarán después.
+/// configurado; aquí solo se guarda la referencia. Se pueblan con
+/// `pnpm images:ingest` (ver docs/product-images.md).
 model ProductImage {
-  id        Int      @id @default(autoincrement())
-  productId Int      @map("product_id")
-  /// Key del objeto en el bucket S3.
-  objectKey String   @map("object_key")
-  url       String?
+  id        Int    @id @default(autoincrement())
+  productId Int    @map("product_id")
+
+  /// Prefijo base del objeto en el bucket, sin extensión ni variante
+  /// (p. ej. `products/{supplierCode}/{sku}/{hash8}`). Las tres variantes
+  /// comparten este prefijo: `{objectKey}/thumb.webp`, `/card.webp`, `/full.webp`.
+  objectKey String @map("object_key")
+  /// Key del archivo original tal como llegó del proveedor (sin procesar),
+  /// conservado para poder regenerar variantes sin pedirlo de nuevo.
+  originalObjectKey String @map("original_object_key")
+
+  /// URL pública servible; se mantiene apuntando a la variante `card` por
+  /// compatibilidad con el contrato `imagenUrl` ya confirmado con la UI.
+  url      String?
+  thumbUrl String  @map("thumb_url")
+  cardUrl  String  @map("card_url")
+  fullUrl  String  @map("full_url")
+
+  /// SHA-256 completo del archivo original. Si no cambia entre corridas de
+  /// `images:ingest`, se salta el reproceso y la resubida (idempotencia).
+  sourceChecksum String  @map("source_checksum")
+  sourceFilename String? @map("source_filename")
+  width          Int?
+  height         Int?
+  bytes          Int?
+
   alt       String?
   position  Int      @default(0)
   isPrimary Boolean  @default(false) @map("is_primary")
@@ -178,6 +200,7 @@ model ProductImage {
 
   product Product @relation(fields: [productId], references: [id])
 
+  @@unique([productId, position])
   @@index([productId])
   @@map("product_images")
 }
