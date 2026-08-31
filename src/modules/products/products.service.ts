@@ -3,7 +3,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { PaginatedResult } from '@common/index';
 
 import type { ListProductsQueryDto } from './dto/list-products-query.dto';
-import { ProductResponseDto } from './dto/product-response.dto';
+import {
+  ProductImageDto,
+  ProductResponseDto,
+} from './dto/product-response.dto';
 import {
   ProductsRepository,
   type ProductWithRelations,
@@ -55,7 +58,21 @@ export class ProductsService {
       subcategoria: product.subcategory
         ? { id: product.subcategory.id, nombre: product.subcategory.name }
         : null,
-      imagenUrl: product.images[0]?.url ?? null,
+      imagenUrl: product.images[0]?.cardUrl ?? product.images[0]?.url ?? null,
+      imagenes: product.images.map((image) => this.toImageResponse(image)),
+    };
+  }
+
+  private toImageResponse(
+    image: ProductWithRelations['images'][number],
+  ): ProductImageDto {
+    return {
+      thumbUrl: image.thumbUrl,
+      cardUrl: image.cardUrl,
+      fullUrl: image.fullUrl,
+      alt: image.alt,
+      position: image.position,
+      esPrincipal: image.isPrimary,
     };
   }
 }

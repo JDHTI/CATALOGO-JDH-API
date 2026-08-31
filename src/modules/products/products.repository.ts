@@ -13,7 +13,17 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
     manufacturer: { select: { name: true } };
     category: { select: { id: true; name: true } };
     subcategory: { select: { id: true; name: true } };
-    images: { select: { url: true } };
+    images: {
+      select: {
+        url: true;
+        thumbUrl: true;
+        cardUrl: true;
+        fullUrl: true;
+        alt: true;
+        position: true;
+        isPrimary: true;
+      };
+    };
   };
 }>;
 
@@ -23,11 +33,18 @@ const PUBLIC_INCLUDE = {
   manufacturer: { select: { name: true } },
   category: { select: { id: true, name: true } },
   subcategory: { select: { id: true, name: true } },
-  // Imagen primaria primero; solo se necesita una.
+  // Primaria primero; el resto de la galería en orden de posición.
   images: {
-    select: { url: true },
+    select: {
+      url: true,
+      thumbUrl: true,
+      cardUrl: true,
+      fullUrl: true,
+      alt: true,
+      position: true,
+      isPrimary: true,
+    },
     orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }] as const,
-    take: 1,
   },
 } satisfies Prisma.ProductInclude;
 

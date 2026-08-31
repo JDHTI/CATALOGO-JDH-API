@@ -17,7 +17,17 @@ const product = {
   manufacturer: null,
   category: null,
   subcategory: null,
-  images: [{ url: 'http://minio/jdh-catalogo/p10.jpg' }],
+  images: [
+    {
+      url: 'http://minio/jdh-catalogo/p10/card.webp',
+      thumbUrl: 'http://minio/jdh-catalogo/p10/thumb.webp',
+      cardUrl: 'http://minio/jdh-catalogo/p10/card.webp',
+      fullUrl: 'http://minio/jdh-catalogo/p10/full.webp',
+      alt: null,
+      position: 0,
+      isPrimary: true,
+    },
+  ],
 } as unknown as ProductWithRelations;
 
 const expectedResponse = {
@@ -30,7 +40,17 @@ const expectedResponse = {
   proveedor: { id: 1, nombre: 'ACME' },
   categoria: null,
   subcategoria: null,
-  imagenUrl: 'http://minio/jdh-catalogo/p10.jpg',
+  imagenUrl: 'http://minio/jdh-catalogo/p10/card.webp',
+  imagenes: [
+    {
+      thumbUrl: 'http://minio/jdh-catalogo/p10/thumb.webp',
+      cardUrl: 'http://minio/jdh-catalogo/p10/card.webp',
+      fullUrl: 'http://minio/jdh-catalogo/p10/full.webp',
+      alt: null,
+      position: 0,
+      esPrincipal: true,
+    },
+  ],
 };
 
 describe('ProductsService', () => {
@@ -89,5 +109,6 @@ describe('ProductsService', () => {
 
     expect(result.marca).toBeNull();
     expect(result.imagenUrl).toBeNull();
+    expect(result.imagenes).toEqual([]);
   });
 });
