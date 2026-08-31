@@ -6,6 +6,7 @@ import { InfrastructureModule } from '@infrastructure/infrastructure.module';
 import { BrandsModule } from '@modules/brands/brands.module';
 import { HealthModule } from '@modules/health/health.module';
 import { LogosModule } from '@modules/logos/logos.module';
+import { ProductImagesModule } from '@modules/product-images/product-images.module';
 import { ProductsModule } from '@modules/products/products.module';
 import { SuppliersModule } from '@modules/suppliers/suppliers.module';
 import { SyncModule } from '@modules/sync/sync.module';
@@ -20,6 +21,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     ProductsModule,
     SyncModule,
     LogosModule,
+    ProductImagesModule,
   ],
 })
 export class AppModule implements NestModule {
