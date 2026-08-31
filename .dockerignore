@@ -1,0 +1,15 @@
+node_modules
+dist
+generated
+coverage
+.git
+.env
+.env.*
+!.env.example
+test
+docs
+entradas
+reports
+*.md
+.vscode
+.idea
