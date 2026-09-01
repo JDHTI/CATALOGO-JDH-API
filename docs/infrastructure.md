@@ -20,6 +20,7 @@ pnpm start:dev
 | `minio`           | `9000`      | API S3-compatible. `docker/env/minio.env`                 |
 | `minio` (consola) | `9001`      | UI web de MinIO                                           |
 | `minio-init`      | —           | Job de un solo uso: crea el bucket `jdh-catalogo`         |
+| `api`             | `8080`      | La API misma, en su imagen Docker (ver «Imagen de producción» abajo) |
 
 El Datawarehouse **no** se levanta en compose: es un Postgres externo y es
 **opcional**. Sus credenciales se configuran con las variables `DWH_*` del
@@ -130,12 +131,34 @@ El compilador de consultas de Prisma 7 se carga con `import()` dinámico, así q
 Jest se ejecuta con `node --experimental-vm-modules` (ya incluido en los scripts
 `test*` de `package.json`).
 
+## Imagen de producción (Docker)
+
+`Dockerfile` es multi-stage: compila con todas las dependencias (incluida
+`sharp`, solo para que `nest build` resuelva sus tipos) y el stage final
+instala únicamente dependencias de producción — `sharp` queda fuera, así que
+la ingesta de imágenes (`pnpm images:ingest`, ver `docs/product-images.md`)
+es imposible de correr dentro de ese contenedor.
+
+`docker/entrypoint.sh` corre `prisma migrate deploy` antes de arrancar
+(`prisma` está en `dependencies`, no en `devDependencies`, justo para que esto
+funcione) y arma `DATABASE_URL` desde `POSTGRES_*` cuando no llega ya
+resuelta — así el servicio `api` de `compose.yaml` no repite credenciales que
+ya viven en `docker/env/postgres.env`.
+
+```bash
+docker compose up -d --build api   # o simplemente: pnpm docker:up
+```
+
+Dentro de la red de compose, la API habla con `postgres`/`redis`/`minio` por
+nombre de servicio; eso solo aplica al contenedor — corriendo en el host
+(`pnpm start:dev`) se sigue usando `localhost` con los puertos publicados.
+
 ## Verificación
 
 ```bash
-curl http://localhost:3000/api/v1/health
+curl http://localhost:8080/api/v1/health
 # {"status":"ok","dependencies":{"database":"up","datawarehouse":"disabled",
 #  "cache":"up","storage":"up"},...}
 ```
 
-Swagger queda en `http://localhost:3000/api/docs` (solo fuera de producción).
+Swagger queda en `http://localhost:8080/api/docs` (solo fuera de producción).

@@ -9,6 +9,27 @@ export class NamedRefDto {
   nombre!: string;
 }
 
+/** Una imagen de la galería del producto, en sus 3 variantes WebP. */
+export class ProductImageDto {
+  @ApiProperty({ example: 'http://cdn/products/392/22837/abcd1234/thumb.webp' })
+  thumbUrl!: string;
+
+  @ApiProperty({ example: 'http://cdn/products/392/22837/abcd1234/card.webp' })
+  cardUrl!: string;
+
+  @ApiProperty({ example: 'http://cdn/products/392/22837/abcd1234/full.webp' })
+  fullUrl!: string;
+
+  @ApiProperty({ nullable: true, type: String })
+  alt!: string | null;
+
+  @ApiProperty({ example: 0 })
+  position!: number;
+
+  @ApiProperty({ example: true })
+  esPrincipal!: boolean;
+}
+
 /**
  * Producto tal como lo consume la UI del catálogo.
  * Contrato CONFIRMADO con el equipo de UI: no cambiar el shape sin acordarlo.
@@ -49,7 +70,12 @@ export class ProductResponseDto {
   @ApiProperty({
     nullable: true,
     type: String,
-    description: 'URL de la imagen primaria, si existe',
+    description:
+      'URL de la variante `card` de la imagen primaria, si existe. Se ' +
+      'mantiene por compatibilidad; para la galería completa usar `imagenes`.',
   })
   imagenUrl!: string | null;
+
+  @ApiProperty({ type: [ProductImageDto] })
+  imagenes!: ProductImageDto[];
 }
