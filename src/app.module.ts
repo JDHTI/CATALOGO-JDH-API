@@ -8,6 +8,7 @@ import { HealthModule } from '@modules/health/health.module';
 import { LogosModule } from '@modules/logos/logos.module';
 import { ProductImagesModule } from '@modules/product-images/product-images.module';
 import { ProductsModule } from '@modules/products/products.module';
+import { SiteImagesModule } from '@modules/site-images/site-images.module';
 import { SuppliersModule } from '@modules/suppliers/suppliers.module';
 import { SyncModule } from '@modules/sync/sync.module';
 
@@ -22,6 +23,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     SyncModule,
     LogosModule,
     ProductImagesModule,
+    SiteImagesModule,
   ],
 })
 export class AppModule implements NestModule {
