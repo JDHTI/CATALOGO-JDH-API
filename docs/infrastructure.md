@@ -14,7 +14,7 @@ pnpm start:dev
 
 | Servicio          | Puerto host | Credenciales / notas                                     |
 | ----------------- | ----------- | -------------------------------------------------------- |
-| `postgres`        | `5435`      | BD propia del catálogo (Prisma). `docker/env/postgres.env` |
+| `postgres`        | `5435`      | Dos bases: `jdh_catalogo` (Prisma, esta API) y `jdh_auth` (sesiones de la UI, ver abajo). `docker/env/postgres.env` |
 | `redis`           | `6380`      | Caché, con `requirepass`. `docker/env/redis.env`          |
 | `redis-commander` | `8081`      | UI web (usuario `jdh_catalogo`). `docker/env/redis-commander.env` |
 | `minio`           | `9000`      | API S3-compatible. `docker/env/minio.env`                 |
@@ -25,6 +25,49 @@ pnpm start:dev
 El Datawarehouse **no** se levanta en compose: es un Postgres externo y es
 **opcional**. Sus credenciales se configuran con las variables `DWH_*` del
 `.env`; ninguna está validada ni es obligatoria para arrancar.
+
+Como el DWH solo es alcanzable desde la red interna de JDH, la instancia
+desplegada no puede sincronizarse sola: el catálogo se arma en local y se
+publica desde ahí con `pnpm push:catalogo` (ver
+[catalog-push.md](./catalog-push.md)).
+
+## Autenticación: `jdh_auth`
+
+**La autenticación no vive en esta API.** La resuelve Better Auth dentro del
+Next.js del catálogo (`jdh-catalogo-ui`), con dos proveedores: Entra ID para el
+personal JDH y email + contraseña para las cuentas de cliente. Esta API no
+tiene guards, ni sesiones, ni endpoints privados todavía; todos sus endpoints
+son públicos.
+
+Lo único que aporta este repo es **dónde se guardan esas sesiones**: la base
+`jdh_auth`, en el mismo contenedor `postgres` de arriba. La crea
+`docker/postgres/init/01-crear-base-auth.sh` en el primer arranque; el esquema
+(`user`, `session`, `account`, `verification`, `rateLimit`) lo aplica la UI con
+`pnpm auth:migrate`.
+
+Base aparte y no un esquema dentro de `jdh_catalogo`: así un
+`prisma migrate reset` de esta API —que borra su base entera— no puede
+llevarse por delante las sesiones y las contraseñas de los clientes. Las dos
+bases no comparten nada. El vínculo entre una cuenta y su cliente del ERP es el
+campo `clienteId` de la tabla `user`, que la UI resuelve por código.
+
+En un entorno que ya existía antes de este script, el volumen de datos no está
+vacío y Postgres no lo ejecuta. Hay que crear la base una vez a mano:
+
+```bash
+docker exec jdh-catalogo-postgres \
+  psql -U jdh_catalogo -d postgres -c 'CREATE DATABASE jdh_auth OWNER jdh_catalogo'
+```
+
+La UI la consume con su propio `DATABASE_URL`, que apunta a este contenedor:
+
+```
+DATABASE_URL=postgres://jdh_catalogo:<clave de docker/env/postgres.env>@localhost:5435/jdh_auth
+```
+
+> Si el `.env` de este repo trae `AUTH_MICROSOFT_ENTRA_ID_*` o
+> `BETTER_AUTH_SECRET`, son restos de una copia: **esta API no las lee**. Su
+> sitio es el `.env.local` de `jdh-catalogo-ui`.
 
 ## Credenciales de desarrollo
 
@@ -37,7 +80,7 @@ tocar ambos:
 
 | Credencial      | Se define en                    | Se consume en                        |
 | --------------- | ------------------------------- | ------------------------------------ |
-| Postgres        | `docker/env/postgres.env`       | `DATABASE_URL` del `.env`            |
+| Postgres        | `docker/env/postgres.env`       | `DATABASE_URL` del `.env` **y** `DATABASE_URL` del `.env.local` de `jdh-catalogo-ui` (base `jdh_auth`) |
 | Redis           | `docker/env/redis.env`          | `REDIS_PASSWORD` del `.env` **y** `REDIS_HOSTS` de `redis-commander.env` |
 | MinIO           | `docker/env/minio.env`          | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` del `.env` |
 | UI de Commander | `docker/env/redis-commander.env`| solo la UI                           |

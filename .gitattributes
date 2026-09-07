@@ -1,0 +1,14 @@
+# Los scripts de shell SIEMPRE con finales de linea LF, en el indice y en el
+# arbol de trabajo.
+#
+# No es cosmetico: estos archivos los ejecuta Linux dentro de un contenedor.
+# Con `core.autocrlf=true` —el valor por defecto de Git para Windows— el
+# checkout los deja en CRLF, y entonces la primera linea deja de ser
+# `#!/bin/sh` para ser `#!/bin/sh\r`. El kernel busca literalmente un
+# interprete llamado "/bin/sh\r" y falla con "bad interpreter: no such file or
+# directory". docker/postgres/init/*.sh se monta directo desde el arbol de
+# trabajo, asi que le pasaria en el primer arranque.
+*.sh text eol=lf
+
+# Igual para lo que Postgres y Docker ejecutan o leen linea a linea.
+docker/entrypoint.sh text eol=lf
