@@ -26,6 +26,11 @@ El Datawarehouse **no** se levanta en compose: es un Postgres externo y es
 **opcional**. Sus credenciales se configuran con las variables `DWH_*` del
 `.env`; ninguna está validada ni es obligatoria para arrancar.
 
+Como el DWH solo es alcanzable desde la red interna de JDH, la instancia
+desplegada no puede sincronizarse sola: el catálogo se arma en local y se
+publica desde ahí con `pnpm push:catalogo` (ver
+[catalog-push.md](./catalog-push.md)).
+
 ## Autenticación: `jdh_auth`
 
 **La autenticación no vive en esta API.** La resuelve Better Auth dentro del

@@ -138,6 +138,30 @@ export class EnvironmentVariables {
   @IsOptional()
   REDIS_DEFAULT_TTL: number = 300;
 
+  // ------------------------------------------- publicación del catálogo (push)
+  // Todas opcionales: solo las define el equipo LOCAL que corre
+  // `pnpm push:catalogo`. Sin `PUSH_TARGET_DATABASE_URL` la publicación queda
+  // deshabilitada, que es justo el estado de la API desplegada.
+  @IsString()
+  @IsOptional()
+  PUSH_TARGET_DATABASE_URL?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(10_000)
+  @IsOptional()
+  PUSH_BATCH_SIZE: number = 1_000;
+
+  @IsInt()
+  @Min(1_000)
+  @IsOptional()
+  PUSH_CONNECTION_TIMEOUT: number = 20_000;
+
+  @IsInt()
+  @Min(1_000)
+  @IsOptional()
+  PUSH_STATEMENT_TIMEOUT: number = 120_000;
+
   // ---------------------------------------------------------- sincronizaciones
   /** Expresión cron de la sincronización de productos desde el DWH. */
   @IsString()
@@ -203,6 +227,9 @@ const NUMERIC_KEYS = [
   'REDIS_DEFAULT_TTL',
   'RATE_LIMIT_TTL',
   'RATE_LIMIT_MAX',
+  'PUSH_BATCH_SIZE',
+  'PUSH_CONNECTION_TIMEOUT',
+  'PUSH_STATEMENT_TIMEOUT',
 ] as const;
 
 const BOOLEAN_KEYS = [

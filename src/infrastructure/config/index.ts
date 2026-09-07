@@ -1,6 +1,7 @@
 export * from './app.config';
 export * from './database.config';
 export * from './datawarehouse.config';
+export * from './push.config';
 export * from './ratelimit.config';
 export * from './redis.config';
 export * from './storage.config';
