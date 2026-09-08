@@ -82,6 +82,11 @@ export class ProductsService {
       sku: product.sku,
       nombre: product.name,
       descripcion: product.shortDescription,
+      descripcionLarga: product.longDescription,
+      seo: {
+        title: product.seoTitle,
+        description: product.seoDescription,
+      },
       marca: product.brand?.name ?? null,
       fabricante: product.manufacturer?.name ?? null,
       proveedor: { id: product.supplier.id, nombre: product.supplier.name },

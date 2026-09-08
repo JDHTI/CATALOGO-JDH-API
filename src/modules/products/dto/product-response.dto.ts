@@ -30,9 +30,29 @@ export class ProductImageDto {
   esPrincipal!: boolean;
 }
 
+/** Metadatos SEO editoriales de la ficha del producto. */
+export class ProductSeoDto {
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    example: 'Mayonesa Fruco 330 g | Catálogo JDH',
+  })
+  title!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    example:
+      'Compra mayonesa Fruco en presentación de 330 g para acompañar tus ' +
+      'preparaciones y surtir tu negocio.',
+  })
+  description!: string | null;
+}
+
 /**
  * Producto tal como lo consume la UI del catálogo.
- * Contrato CONFIRMADO con el equipo de UI: no cambiar el shape sin acordarlo.
+ * Contrato base confirmado con la UI; los campos editoriales son una extensión
+ * aditiva y nullable para permitir la migración progresiva.
  * No expone `activo` ni precios (los precios aún no existen en el catálogo).
  */
 export class ProductResponseDto {
@@ -48,9 +68,20 @@ export class ProductResponseDto {
   @ApiProperty({
     nullable: true,
     type: String,
-    description: 'Descripción corta del ERP',
+    description:
+      'Texto o código operativo del ERP; no es el contenido editorial',
   })
   descripcion!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Descripción editorial extensa del producto',
+  })
+  descripcionLarga!: string | null;
+
+  @ApiProperty({ type: ProductSeoDto })
+  seo!: ProductSeoDto;
 
   @ApiProperty({ nullable: true, type: String })
   marca!: string | null;

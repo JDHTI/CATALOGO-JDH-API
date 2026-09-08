@@ -53,6 +53,10 @@ el hash del DWH. Allá no corre ningún sync (el DWH está deshabilitado), así 
 la columna queda libre para este uso: si el hash del producto local coincide
 con el de destino, la fila no se reescribe.
 
+El push incluye `long_description`, `seo_title` y `seo_description` dentro de
+los campos de producto y de su hash. Estos valores son editoriales: el push los
+transporta desde local y no los genera ni los reemplaza con datos del DWH.
+
 El hash cubre todos los campos que viajan, incluidos los que el sync del DWH no
 toca (`price`, `categoryId`, …), así que un cambio de precio hecho a mano en
 local también se propaga.
