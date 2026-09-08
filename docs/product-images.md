@@ -19,6 +19,26 @@ cuadrado con fondo blanco:
 imagen primaria, por compatibilidad con el contrato ya confirmado con la UI)
 y `imagenes[]` (galería completa, primaria primero).
 
+Las URLs se guardan absolutas y servibles en `product_images`: la API nunca
+consulta el bucket al leer, no hay presigned URLs ni revalidación. Como la key
+incluye el hash del contenido, si la imagen cambia cambia la URL — el cliente
+puede cachear indefinidamente sin purgar nada.
+
+`alt` NO lo puebla la ingesta: queda `null` siempre. Es un campo editorial,
+reservado para cuando haya de dónde sacar un texto por imagen; hasta entonces
+el alt lo genera la UI.
+
+### Ordenamiento y destacados
+
+- `GET /products?orderBy=conImagen` pone delante los productos con imagen
+  primaria. Es **opt-in**: el orden por defecto sigue siendo alfabético,
+  porque hay consumidores (las sugerencias del buscador) donde colar un
+  producto con foto por encima de una coincidencia de nombre más cercana no
+  es una mejora.
+- `GET /products/destacados?limit=8` es la vitrina de la home: solo productos
+  con imagen primaria, repartidos entre marcas y rotados con semilla diaria.
+  Ver `ProductsRepository.findFeatured`.
+
 ## Cargar imágenes
 
 ```bash

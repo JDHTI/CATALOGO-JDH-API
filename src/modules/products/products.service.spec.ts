@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
+import { FeaturedProductsQueryDto } from './dto/featured-products-query.dto';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
 import type {
   ProductsRepository,
@@ -92,6 +93,45 @@ describe('ProductsService', () => {
     await expect(service.findOne(999)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('destacados: la semilla es el dia, estable dentro del dia', async () => {
+    const seeds: number[] = [];
+    const findFeatured = jest
+      .fn()
+      .mockImplementation((_limit: number, seed: number) => {
+        seeds.push(seed);
+        return Promise.resolve([product]);
+      });
+    const service = new ProductsService({
+      findFeatured,
+    } as unknown as ProductsRepository);
+    const query = Object.assign(new FeaturedProductsQueryDto(), { limit: 8 });
+
+    await service.findFeatured(query, new Date('2026-09-08T00:30:00Z'));
+    await service.findFeatured(query, new Date('2026-09-08T23:30:00Z'));
+    await service.findFeatured(query, new Date('2026-09-09T00:30:00Z'));
+
+    // Dos peticiones del mismo dia deben ver la MISMA vitrina: si la semilla
+    // cambiara por peticion la home parpadearia y la cache de 300s no serviria.
+    expect(seeds[0]).toBe(seeds[1]);
+    expect(seeds[2]).toBe(seeds[0] + 1);
+    expect(findFeatured).toHaveBeenCalledWith(8, seeds[0]);
+  });
+
+  it('destacados: mismo shape { data, meta } que el listado', async () => {
+    const service = new ProductsService({
+      findFeatured: jest.fn().mockResolvedValue([product]),
+    } as unknown as ProductsRepository);
+
+    await expect(
+      service.findFeatured(
+        Object.assign(new FeaturedProductsQueryDto(), { limit: 8 }),
+      ),
+    ).resolves.toEqual({
+      data: [expectedResponse],
+      meta: { page: 1, limit: 8, total: 1, totalPages: 1 },
+    });
   });
 
   it('devuelve null en marca/imagenUrl cuando no hay datos', async () => {

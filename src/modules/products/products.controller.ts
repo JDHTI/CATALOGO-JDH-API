@@ -20,6 +20,7 @@ import {
   type PaginatedResult,
 } from '@common/index';
 
+import { FeaturedProductsQueryDto } from './dto/featured-products-query.dto';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { ProductsService } from './products.service';
@@ -36,13 +37,32 @@ export class ProductsController {
     summary: 'Listado paginado de productos activos',
     description:
       'Solo productos activos, ordenados por nombre. `search` busca ' +
-      'case-insensitive sobre nombre, sku y marca.',
+      'case-insensitive sobre nombre, sku y marca. Con ' +
+      '`orderBy=conImagen` los productos con imagen primaria van primero.',
   })
   @ApiOkResponse({ description: 'Página de productos: { data, meta }' })
   findAll(
     @Query() query: ListProductsQueryDto,
   ): Promise<PaginatedResult<ProductResponseDto>> {
     return this.products.findAll(query);
+  }
+
+  // Antes de `:id`: Nest resuelve las rutas en orden de declaración y
+  // `:id` capturaría "destacados" (y respondería 404 por el ParseIntPipe).
+  @Get('destacados')
+  @CacheTTL(300)
+  @ApiOperation({
+    summary: 'Vitrina de destacados de la home',
+    description:
+      'Solo productos con imagen primaria, repartidos entre marcas y ' +
+      'rotados una vez al día. Mismo shape { data, meta } que el listado, ' +
+      'pero sin paginar: `meta` describe lo devuelto.',
+  })
+  @ApiOkResponse({ description: 'Destacados: { data, meta }' })
+  findFeatured(
+    @Query() query: FeaturedProductsQueryDto,
+  ): Promise<PaginatedResult<ProductResponseDto>> {
+    return this.products.findFeatured(query);
   }
 
   @Get(':id')
