@@ -13,9 +13,9 @@
  * cada archivo procesado.
  *
  * La referencia sale de la carpeta que contiene el archivo cuando esta sigue
- * `{consecutivo}-{referencia}-{nombre}`; si no, del nombre del archivo. El
- * recorrido es recursivo, así que las carpetas intermedias (p. ej. una por
- * marca) no molestan.
+ * `{consecutivo}-{referencia}-{nombre}` o `{referencia}-{consecutivo}` (con
+ * nombre opcional); si no, del nombre del archivo. El recorrido es recursivo,
+ * así que las carpetas intermedias (p. ej. una por marca) no molestan.
  */
 import { cpus } from 'node:os';
 import { basename, extname, join, relative, resolve } from 'node:path';
@@ -349,6 +349,41 @@ async function processFile(
   }
 }
 
+/**
+ * Avisa cuando dos archivos de la misma corrida caen en la misma ranura
+ * (proveedor + referencia + posición): el segundo pisa al primero.
+ *
+ * Pasa, por ejemplo, si una entrega trae `0212-01/` y `0212-02/` como carpetas
+ * distintas del MISMO producto — en el layout `{referencia}-{consecutivo}` las
+ * dos resuelven a la referencia `0212` y la segunda sobrescribe la galería de
+ * la primera. La ingesta no puede decidir cuál es la buena; solo lo reporta
+ * para que se revise la entrega antes de subir.
+ */
+function warnSlotCollisions(rows: ReportRow[], logger: Logger): void {
+  const bySlot = new Map<string, ReportRow[]>();
+  for (const row of rows) {
+    if (row.estado === 'error') continue;
+    const slot = `${row.proveedor}|${row.sku}|${row.posicion}`;
+    const group = bySlot.get(slot);
+    if (group) group.push(row);
+    else bySlot.set(slot, [row]);
+  }
+
+  const collisions = [...bySlot.values()].filter((group) => group.length > 1);
+  if (collisions.length === 0) return;
+
+  logger.warn(
+    `${collisions.length} referencia(s) con más de un archivo para la misma posición; el último gana:`,
+  );
+  for (const group of collisions) {
+    const { proveedor, sku, posicion } = group[0];
+    const archivos = group.map((row) => row.archivo).join(' | ');
+    logger.warn(
+      `  ${proveedor} · ref ${sku} · posición ${posicion} ← ${archivos}`,
+    );
+  }
+}
+
 function printSummary(
   rows: ReportRow[],
   reportPath: string,
@@ -361,6 +396,8 @@ function printSummary(
     `Total: ${rows.length} · ok: ${counts.ok} · omitidos: ${counts.omitido} · errores: ${counts.error}`,
   );
   logger.log(`Reporte: ${reportPath}`);
+
+  warnSlotCollisions(rows, logger);
 
   if (counts.error > 0) {
     logger.warn(`Hay ${counts.error} archivo(s) con error. Revisa el CSV.`);
