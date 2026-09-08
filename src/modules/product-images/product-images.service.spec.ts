@@ -164,6 +164,7 @@ describe('ProductImagesService.ingestFile', () => {
     expect(result).toEqual({
       status: 'ok',
       sku: 'ABC-1',
+      position: 0,
       productIds: [100],
       objectKeyBase: expect.stringContaining('products/P010/ABC-1/') as unknown,
     });
@@ -261,7 +262,11 @@ describe('ProductImagesService.ingestFile', () => {
       force: false,
     });
 
-    expect(result).toMatchObject({ status: 'omitido', sku: 'DEF' });
+    expect(result).toMatchObject({
+      status: 'omitido',
+      sku: 'DEF',
+      position: 0,
+    });
     expect(processor.process).not.toHaveBeenCalled();
     expect(storage.put).not.toHaveBeenCalled();
   });

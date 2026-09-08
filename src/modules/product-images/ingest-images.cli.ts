@@ -57,6 +57,8 @@ interface ReportRow {
   carpeta: string;
   proveedor: string;
   sku: string;
+  tipo: string;
+  posicion: string;
   estado: 'ok' | 'omitido' | 'error';
   motivo: string;
   productIds: string;
@@ -68,11 +70,25 @@ const REPORT_COLUMNS: (keyof ReportRow)[] = [
   'carpeta',
   'proveedor',
   'sku',
+  'tipo',
+  'posicion',
   'estado',
   'motivo',
   'productIds',
   'objectKeyBase',
 ];
+
+/**
+ * Clasificación de una imagen, derivada de su posición.
+ *
+ * Solo hay dos: la principal y el resto de la galería. No se intenta distinguir
+ * detalle de tabla nutricional porque la letra del consecutivo no mapea a un
+ * tipo estable — en una entrega la `B` es otro ángulo del producto y en otra ya
+ * es la tabla nutricional.
+ */
+function describePosition(position: number): string {
+  return position === 0 ? 'principal' : 'galeria';
+}
 
 function arg(nombre: string): string | undefined {
   const prefijo = `--${nombre}=`;
@@ -178,6 +194,8 @@ function outcomeToRow(
     return {
       ...base,
       sku: '',
+      tipo: '',
+      posicion: '',
       estado: 'error',
       motivo: outcome.motivo,
       productIds: '',
@@ -188,6 +206,8 @@ function outcomeToRow(
     return {
       ...base,
       sku: outcome.sku,
+      tipo: describePosition(outcome.position),
+      posicion: String(outcome.position),
       estado: 'omitido',
       motivo: outcome.motivo,
       productIds: outcome.productIds.join('|'),
@@ -197,6 +217,8 @@ function outcomeToRow(
   return {
     ...base,
     sku: outcome.sku,
+    tipo: describePosition(outcome.position),
+    posicion: String(outcome.position),
     estado: 'ok',
     motivo: '',
     productIds: outcome.productIds.join('|'),
@@ -247,6 +269,8 @@ async function processSupplierFolder(
         carpeta: folderName,
         proveedor: '',
         sku: '',
+        tipo: '',
+        posicion: '',
         estado: 'error',
         motivo: `Proveedor no encontrado para la carpeta "${folderName}"`,
         productIds: '',
@@ -291,6 +315,8 @@ async function processFile(
       return {
         ...base,
         sku: '',
+        tipo: '',
+        posicion: '',
         estado: 'error',
         motivo:
           'No se pudo derivar una referencia de la carpeta ni del archivo',
@@ -313,6 +339,8 @@ async function processFile(
     return {
       ...base,
       sku: '',
+      tipo: '',
+      posicion: '',
       estado: 'error',
       motivo: (error as Error).message,
       productIds: '',

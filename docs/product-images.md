@@ -19,6 +19,26 @@ cuadrado con fondo blanco:
 imagen primaria, por compatibilidad con el contrato ya confirmado con la UI)
 y `imagenes[]` (galería completa, primaria primero).
 
+### Clasificación: principal y galería, nada más
+
+Solo hay dos roles, y salen de la **posición**:
+
+| Posición | Rol | De dónde viene |
+| -------- | --- | -------------- |
+| `0` | **Imagen principal** (`isPrimary`) | el archivo sin letra: `15-5798-….png` |
+| `1`, `2`, `3`, … | **Galería** | las letras: `15B-`, `15C-`, `15D-` |
+
+Deliberadamente NO se distingue «detalle» de «tabla nutricional». Se evaluó y
+se descartó: **la letra no mapea a un tipo estable**. En la referencia 5798 la
+`B` es otro ángulo del producto, la `C` los ingredientes y la `D` la tabla
+nutricional; en la 12935 la `B` ya es la tabla nutricional y la `D` los
+ingredientes. Clasificar más fino exigiría que alguien reparta los archivos a
+mano en cada entrega, y el catálogo no gana nada con eso: a la UI le basta
+saber cuál es la portada y cuáles van en el carrusel.
+
+Si algún día hace falta, el lugar correcto es que el proveedor lo declare en
+la entrega, no que lo adivine el pipeline.
+
 Las URLs se guardan absolutas y servibles en `product_images`: la API nunca
 consulta el bucket al leer, no hay presigned URLs ni revalidación. Como la key
 incluye el hash del contenido, si la imagen cambia cambia la URL — el cliente
@@ -55,8 +75,11 @@ pnpm images:ingest -- --dir=./entradas --dry-run --force --concurrencia=4
 - `--force` reprocesa aunque el checksum no haya cambiado (por defecto se
   salta: ver idempotencia más abajo).
 - Escribe `reports/images-ingest-{timestamp}.csv` con una fila por archivo:
-  `archivo, carpeta, proveedor, sku, estado, motivo, productIds, objectKeyBase`
-  (`carpeta` es la que contiene el archivo, `archivo` la ruta relativa completa).
+  `archivo, carpeta, proveedor, sku, tipo, posicion, estado, motivo,
+  productIds, objectKeyBase` (`carpeta` es la que contiene el archivo,
+  `archivo` la ruta relativa completa, y `tipo` es `principal` o `galeria`
+  según la posición — sirve para verificar de un vistazo qué archivo quedó
+  como portada antes de la carga real).
   `estado` es `ok` | `omitido` | `error`. Revisar los `error` es el paso
   operativo después de cada corrida.
 
