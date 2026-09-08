@@ -35,11 +35,41 @@ pnpm images:ingest -- --dir=./entradas --dry-run --force --concurrencia=4
 - `--force` reprocesa aunque el checksum no haya cambiado (por defecto se
   salta: ver idempotencia más abajo).
 - Escribe `reports/images-ingest-{timestamp}.csv` con una fila por archivo:
-  `archivo, carpeta, proveedor, sku, estado, motivo, productIds, objectKeyBase`.
+  `archivo, carpeta, proveedor, sku, estado, motivo, productIds, objectKeyBase`
+  (`carpeta` es la que contiene el archivo, `archivo` la ruta relativa completa).
   `estado` es `ok` | `omitido` | `error`. Revisar los `error` es el paso
   operativo después de cada corrida.
 
 ## Cómo deben venir los archivos
+
+Hay dos layouts admitidos. Se detectan solos por el nombre de la carpeta que
+contiene cada imagen; el recorrido es recursivo, así que las carpetas
+intermedias (una por marca, p. ej.) no molestan.
+
+### Layout A — carpeta por producto (el que usan los proveedores)
+
+```
+399/                                        ← código de proveedor (o --proveedor=399)
+  1.FRUCO 2000X2000 PX/                     ← carpeta de marca: se ignora
+    1-1001-FRUCO TOMATE 4350 G/             ← consecutivo-REFERENCIA-nombre
+      1-1001-FRUCO TOMATE 4350 G.png        ← principal   → posición 0
+      1B-1001-FRUCO TOMATE 4350 G.png       ← galería     → posición 1
+      1C-1001-FRUCO TOMATE 4350 G.png       ← galería     → posición 2
+```
+
+- **La referencia la manda la carpeta**, no el archivo: es el segmento del
+  medio (`1001`) y debe ser el `Product.sku` del ERP.
+- El **consecutivo** (`1`, `40`…) es numeración interna del proveedor y se
+  **descarta**: no llega al bucket ni a la base de datos.
+- La **letra del consecutivo** define la posición en la galería: sin letra (o
+  `A`) es la principal, `B` la segunda, `C` la tercera, y así. Un archivo sin
+  letra que además no siga el patrón se reporta como `error` en vez de
+  asumir posición 0 — asumirla sobreescribiría la imagen principal.
+- En el bucket la carpeta del producto es **`{referencia}-{nombre}`** en slug
+  (`1001-fruco-tomate-4350-g`), o sea el nombre de la carpeta de origen sin
+  el consecutivo y normalizado.
+
+### Layout B — plano (`SKU.png`)
 
 - **Carpeta = proveedor.** El nombre de la carpeta debe ser el **código** del
   proveedor en el ERP (`Supplier.code`, el mismo que usa el sync de
@@ -57,7 +87,9 @@ pnpm images:ingest -- --dir=./entradas --dry-run --force --concurrencia=4
   - Un SKU que termina en dígitos por sí mismo (`REF-2024`) nunca se rompe: el
     sufijo de galería solo se prueba si el nombre completo no encontró
     producto.
-- **Formatos de entrada**: PNG, JPG/JPEG, WebP, GIF, TIFF, AVIF.
+### Común a los dos
+
+- **Formatos de entrada**: PNG, JPG/JPEG, WebP, GIF, TIF/TIFF, AVIF.
 - Fondos transparentes se aplanan a blanco automáticamente; no hace falta
   preprocesar nada, solo recortar al contenido.
 
@@ -75,11 +107,15 @@ simple como sobrescribir el archivo de origen y volver a correr el comando.
 ## Layout del bucket
 
 ```
-originals/products/{supplierCode}/{sku}/{hash8}.{ext}   ← archivo original
-products/{supplierCode}/{sku}/{hash8}/thumb.webp
-products/{supplierCode}/{sku}/{hash8}/card.webp
-products/{supplierCode}/{sku}/{hash8}/full.webp
+originals/products/{supplierCode}/{carpeta}/{hash8}.{ext}   ← archivo original
+products/{supplierCode}/{carpeta}/{hash8}/thumb.webp
+products/{supplierCode}/{carpeta}/{hash8}/card.webp
+products/{supplierCode}/{carpeta}/{hash8}/full.webp
 ```
+
+`{carpeta}` es `{referencia}-{nombre}` en el layout A
+(`399/1001-fruco-tomate-4350-g/…`) y el SKU pelado en el layout B
+(`399/1001/…`).
 
 `hash8` son los primeros 8 caracteres del checksum. Si la imagen cambia,
 cambia la key completa → `Cache-Control: public, max-age=31536000, immutable`

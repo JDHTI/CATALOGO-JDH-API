@@ -172,6 +172,41 @@ describe('ProductImagesService.ingestFile', () => {
     expect(cache.invalidateByPrefix).toHaveBeenCalledWith('http:');
   });
 
+  it('usa objectFolder para la key cuando el candidato la trae', async () => {
+    const { service, storage } = buildService({ products: [{ id: 101 }] });
+
+    const result = await service.ingestFile({
+      supplier,
+      candidates: [
+        {
+          sku: '1001',
+          position: 2,
+          isPrimary: false,
+          objectFolder: '1001-fruco-tomate-4350-g',
+        },
+      ],
+      buffer: Buffer.from('contenido'),
+      sourceFilename: '1C-1001-FRUCO TOMATE 4350 G.png',
+      dryRun: false,
+      force: false,
+    });
+
+    expect(result).toMatchObject({
+      status: 'ok',
+      objectKeyBase: expect.stringContaining(
+        'products/P010/1001-fruco-tomate-4350-g/',
+      ) as unknown,
+    });
+    // El original también va bajo la carpeta `referencia-nombre`.
+    expect(storage.put).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^originals\/products\/P010\/1001-fruco-tomate-4350-g\/[0-9a-f]{8}\.png$/,
+      ),
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
   it('salta al segundo candidato si el primero no tiene producto', async () => {
     const { service, prisma } = buildService({ products: [] });
     prisma.product.findMany

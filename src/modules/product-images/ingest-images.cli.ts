@@ -11,6 +11,11 @@
  * proveedor, o (con `--proveedor`) la carpeta de un único proveedor.
  * Escribe `reports/images-ingest-{timestamp}.csv` con el resultado de
  * cada archivo procesado.
+ *
+ * La referencia sale de la carpeta que contiene el archivo cuando esta sigue
+ * `{consecutivo}-{referencia}-{nombre}`; si no, del nombre del archivo. El
+ * recorrido es recursivo, así que las carpetas intermedias (p. ej. una por
+ * marca) no molestan.
  */
 import { cpus } from 'node:os';
 import { basename, extname, join, relative, resolve } from 'node:path';
@@ -20,7 +25,10 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../../app.module';
-import { parseImageFilename } from './filename-parser';
+import {
+  parseImageFilename,
+  parseProductFolderCandidates,
+} from './filename-parser';
 import type { IngestOutcome, ResolvedSupplier } from './product-images.service';
 import { ProductImagesService } from './product-images.service';
 
@@ -30,12 +38,16 @@ const IMAGE_EXTENSIONS = new Set([
   '.jpeg',
   '.webp',
   '.gif',
+  '.tif',
   '.tiff',
   '.avif',
 ]);
 
 interface DiscoveredFile {
   supplierFolder: string;
+  /** Carpeta que contiene el archivo; en el layout por carpeta trae la
+   *  referencia (`{consecutivo}-{referencia}-{nombre}`). */
+  parentFolder: string;
   relativePath: string;
   absolutePath: string;
 }
@@ -89,6 +101,7 @@ async function walkSupplierFolder(
       } else if (IMAGE_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
         results.push({
           supplierFolder,
+          parentFolder: basename(current),
           relativePath: relative(rootDir, full),
           absolutePath: full,
         });
@@ -157,7 +170,7 @@ function outcomeToRow(
 ): ReportRow {
   const base = {
     archivo: file.relativePath,
-    carpeta: file.supplierFolder,
+    carpeta: file.parentFolder,
     proveedor: supplierCode,
   };
 
@@ -259,21 +272,28 @@ async function processFile(
 ): Promise<ReportRow> {
   const base = {
     archivo: file.relativePath,
-    carpeta: file.supplierFolder,
+    carpeta: file.parentFolder,
     proveedor: supplier.code,
   };
 
   try {
     const buffer = await readFile(file.absolutePath);
     const sourceFilename = basename(file.absolutePath);
-    const candidates = parseImageFilename(sourceFilename);
+    // La carpeta del producto manda cuando sigue el layout
+    // `{consecutivo}-{referencia}-{nombre}`; si no, se lee el nombre del
+    // archivo (layout plano `SKU.png`).
+    const candidates = [
+      ...parseProductFolderCandidates(file.parentFolder, sourceFilename),
+      ...parseImageFilename(sourceFilename),
+    ];
 
     if (candidates.length === 0) {
       return {
         ...base,
         sku: '',
         estado: 'error',
-        motivo: 'No se pudo derivar un SKU del nombre de archivo',
+        motivo:
+          'No se pudo derivar una referencia de la carpeta ni del archivo',
         productIds: '',
         objectKeyBase: '',
       };
