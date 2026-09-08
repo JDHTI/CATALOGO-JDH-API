@@ -109,8 +109,19 @@ model Product {
   sku              String
   /// Nombre comercial (← descripcion del DWH).
   name             String
-  /// Descripción corta del ERP (← sku_proveedor del DWH; NO es un código).
+  /// Texto/código operativo del ERP (← sku_proveedor del DWH; no es contenido
+  /// editorial ni un código de proveedor).
   shortDescription String? @map("short_description")
+
+  /// Descripción editorial extensa para la ficha pública del producto.
+  /// No la escribe el sync del DWH: se mantiene en el catálogo y se migra por
+  /// lotes revisados (ver docs/product-content-migration.md).
+  longDescription String? @map("long_description") @db.Text
+  /// Título SEO editorial, normalmente de 50–65 caracteres.
+  seoTitle       String? @map("seo_title")
+  /// Descripción SEO editorial para metadatos y snippets, normalmente hasta
+  /// 160 caracteres. No se deriva automáticamente del nombre del producto.
+  seoDescription String? @map("seo_description")
 
   // Clasificación cruda del DWH, conservada tal cual para trazabilidad.
   tipoItem String? @map("tipo_item")

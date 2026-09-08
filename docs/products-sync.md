@@ -29,7 +29,7 @@ La fuente es la vista **`consumo.productos`** del datawarehouse Postgres
 | `producto_key`        | `productoKey`                      | Hash surrogate estable del DWH. **Clave del upsert**.     |
 | `sku`                 | `sku`                              | Indexado, **no único** (se repite entre compañías).       |
 | `descripcion`         | `name`                             | Nombre comercial (fallback: el sku). Se recortan los símbolos iniciales del ERP (`*Vaso 7oz` → `Vaso 7oz`); el resto se conserva intacto porque lleva unidades y códigos. |
-| `sku_proveedor`       | `shortDescription`                 | **Descripción corta del ERP, NO un código de proveedor.** |
+| `sku_proveedor`       | `shortDescription`                 | Texto/código operativo del ERP; en el lote actual suele ser numérico y **no es contenido editorial ni un código de proveedor**. |
 | `fecha_creacion`      | `dwhCreatedAt`                     |                                                           |
 | `fecha_actualizacion` | — (no se usa)                      | Siempre NULL en la vista.                                 |
 | `estado` (`'A'/'I'`)  | `active`                           | `'A'` → `true`.                                           |
@@ -46,6 +46,11 @@ La fuente es la vista **`consumo.productos`** del datawarehouse Postgres
 Campos propios del sync: `sourceHash` (sha1 de los campos mapeados; si no
 cambió, la fila no se reescribe y cuenta como `unchanged`) y `syncedAt`
 (marca de "visto en esta ejecución").
+
+Los campos editoriales `longDescription`, `seoTitle` y `seoDescription` quedan
+fuera del mapeo y del hash del DWH. Un sync puede actualizar el resto de la fila
+sin borrar contenido editorial; los textos se cargan por lotes con el flujo de
+[`product-content-migration.md`](./product-content-migration.md).
 
 ## Semántica de "proveedor"
 

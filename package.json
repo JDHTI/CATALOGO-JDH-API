@@ -13,6 +13,7 @@
     "docker:logs": "docker compose logs -f",
     "logos:upload": "nest build && node dist/src/modules/logos/upload-logo.cli",
     "images:ingest": "nest build && node dist/src/modules/product-images/ingest-images.cli",
+    "product-content:import": "nest build && node dist/src/modules/product-content/product-content.cli",
     "site-images:upload": "nest build && node dist/src/modules/site-images/upload-site-image.cli",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

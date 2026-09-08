@@ -160,6 +160,9 @@ const buildProduct = (overrides: Row = {}): Row => ({
   sku: 'SKU-1',
   name: 'PRODUCTO UNO',
   shortDescription: null,
+  longDescription: null,
+  seoTitle: null,
+  seoDescription: null,
   tipoItem: 'Inventario',
   origen: null,
   linea: null,
@@ -353,10 +356,19 @@ describe('CatalogPushService', () => {
 
       await buildService(local, remote).run();
       local.product.rows[0].name = 'PRODUCTO UNO CORREGIDO';
+      local.product.rows[0].longDescription =
+        'Descripción editorial revisada para la ficha pública del producto.';
+      local.product.rows[0].seoTitle = 'Producto uno corregido | JDH';
       const segunda = await buildService(local, remote).run();
 
       expect(segunda.products.updated).toBe(1);
       expect(remote.product.rows[0].name).toBe('PRODUCTO UNO CORREGIDO');
+      expect(remote.product.rows[0].longDescription).toContain(
+        'Descripción editorial',
+      );
+      expect(remote.product.rows[0].seoTitle).toBe(
+        'Producto uno corregido | JDH',
+      );
     });
 
     it('desactiva en destino los productos que ya no existen en local', async () => {
