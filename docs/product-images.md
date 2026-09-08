@@ -150,11 +150,14 @@ simple como sobrescribir el archivo de origen y volver a correr el comando.
 ## Layout del bucket
 
 ```
-originals/products/{supplierCode}/{carpeta}/{hash8}.{ext}   ← archivo original
 products/{supplierCode}/{carpeta}/{hash8}/thumb.webp
 products/{supplierCode}/{carpeta}/{hash8}/card.webp
 products/{supplierCode}/{carpeta}/{hash8}/full.webp
 ```
+
+Solo se suben las tres variantes. El archivo original se procesa en memoria y
+no se conserva en el bucket: si hay que regenerar variantes, se vuelve a correr
+`images:ingest` sobre la entrega del proveedor.
 
 `{carpeta}` es `{referencia}-{nombre}` en el layout A
 (`399/1001-fruco-tomate-4350-g/…`) y el SKU pelado en el layout B

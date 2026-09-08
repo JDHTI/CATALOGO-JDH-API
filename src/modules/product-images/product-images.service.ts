@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { extname } from 'node:path';
 
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -157,14 +156,6 @@ export class ProductImagesService {
 
     const processed = await this.processor.process(params.buffer);
 
-    const originalExtension =
-      extname(params.sourceFilename).toLowerCase() || '.bin';
-    const originalObjectKey = `originals/products/${params.supplier.code}/${objectFolder}/${checksum.slice(0, 8)}${originalExtension}`;
-
-    await this.storage.put(originalObjectKey, params.buffer, {
-      cacheControl: 'public, max-age=31536000, immutable',
-    });
-
     const variantUrls = new Map<string, string>();
     for (const variant of processed.variants) {
       const stored = await this.storage.put(
@@ -190,7 +181,6 @@ export class ProductImagesService {
         create: {
           productId,
           objectKey: objectKeyBase,
-          originalObjectKey,
           url: cardUrl,
           thumbUrl,
           cardUrl,
@@ -205,7 +195,6 @@ export class ProductImagesService {
         },
         update: {
           objectKey: objectKeyBase,
-          originalObjectKey,
           url: cardUrl,
           thumbUrl,
           cardUrl,

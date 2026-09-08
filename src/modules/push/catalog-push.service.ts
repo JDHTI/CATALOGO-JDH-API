@@ -748,7 +748,6 @@ export class CatalogPushService {
       const data: RemoteImageData = {
         productId: remoteProductId,
         objectKey: local.objectKey,
-        originalObjectKey: local.originalObjectKey,
         url: local.url,
         thumbUrl: local.thumbUrl,
         cardUrl: local.cardUrl,
@@ -774,7 +773,6 @@ export class CatalogPushService {
 
       const same =
         existing.objectKey === data.objectKey &&
-        existing.originalObjectKey === data.originalObjectKey &&
         existing.url === data.url &&
         existing.thumbUrl === data.thumbUrl &&
         existing.cardUrl === data.cardUrl &&
