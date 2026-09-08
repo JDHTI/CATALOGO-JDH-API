@@ -31,12 +31,15 @@ export type IngestOutcome =
   | {
       status: 'ok';
       sku: string;
+      /** Posición ganadora: 0 es la imagen principal, el resto galería. */
+      position: number;
       productIds: number[];
       objectKeyBase: string;
     }
   | {
       status: 'omitido';
       sku: string;
+      position: number;
       productIds: number[];
       motivo: string;
     }
@@ -130,6 +133,7 @@ export class ProductImagesService {
         return {
           status: 'omitido',
           sku: candidate.sku,
+          position: candidate.position,
           productIds,
           motivo: 'checksum sin cambios',
         };
@@ -142,7 +146,13 @@ export class ProductImagesService {
     const objectKeyBase = `products/${params.supplier.code}/${objectFolder}/${checksum.slice(0, 8)}`;
 
     if (params.dryRun) {
-      return { status: 'ok', sku: candidate.sku, productIds, objectKeyBase };
+      return {
+        status: 'ok',
+        sku: candidate.sku,
+        position: candidate.position,
+        productIds,
+        objectKeyBase,
+      };
     }
 
     const processed = await this.processor.process(params.buffer);
@@ -192,7 +202,6 @@ export class ProductImagesService {
           bytes: params.buffer.byteLength,
           position: candidate.position,
           isPrimary: candidate.isPrimary,
-          kind: candidate.kind ?? null,
         },
         update: {
           objectKey: objectKeyBase,
@@ -207,7 +216,6 @@ export class ProductImagesService {
           height: processed.originalHeight,
           bytes: params.buffer.byteLength,
           isPrimary: candidate.isPrimary,
-          kind: candidate.kind ?? null,
         },
       });
     }
@@ -218,7 +226,13 @@ export class ProductImagesService {
       `Imagen de "${candidate.sku}" (proveedor ${params.supplier.code}) subida en ${objectKeyBase} → ${productIds.length} producto(s)`,
     );
 
-    return { status: 'ok', sku: candidate.sku, productIds, objectKeyBase };
+    return {
+      status: 'ok',
+      sku: candidate.sku,
+      position: candidate.position,
+      productIds,
+      objectKeyBase,
+    };
   }
 
   private async matchProducts(

@@ -19,6 +19,26 @@ cuadrado con fondo blanco:
 imagen primaria, por compatibilidad con el contrato ya confirmado con la UI)
 y `imagenes[]` (galería completa, primaria primero).
 
+### Clasificación: principal y galería, nada más
+
+Solo hay dos roles, y salen de la **posición**:
+
+| Posición | Rol | De dónde viene |
+| -------- | --- | -------------- |
+| `0` | **Imagen principal** (`isPrimary`) | el archivo sin letra: `15-5798-….png` |
+| `1`, `2`, `3`, … | **Galería** | las letras: `15B-`, `15C-`, `15D-` |
+
+Deliberadamente NO se distingue «detalle» de «tabla nutricional». Se evaluó y
+se descartó: **la letra no mapea a un tipo estable**. En la referencia 5798 la
+`B` es otro ángulo del producto, la `C` los ingredientes y la `D` la tabla
+nutricional; en la 12935 la `B` ya es la tabla nutricional y la `D` los
+ingredientes. Clasificar más fino exigiría que alguien reparta los archivos a
+mano en cada entrega, y el catálogo no gana nada con eso: a la UI le basta
+saber cuál es la portada y cuáles van en el carrusel.
+
+Si algún día hace falta, el lugar correcto es que el proveedor lo declare en
+la entrega, no que lo adivine el pipeline.
+
 Las URLs se guardan absolutas y servibles en `product_images`: la API nunca
 consulta el bucket al leer, no hay presigned URLs ni revalidación. Como la key
 incluye el hash del contenido, si la imagen cambia cambia la URL — el cliente
@@ -56,9 +76,10 @@ pnpm images:ingest -- --dir=./entradas --dry-run --force --concurrencia=4
   salta: ver idempotencia más abajo).
 - Escribe `reports/images-ingest-{timestamp}.csv` con una fila por archivo:
   `archivo, carpeta, proveedor, sku, tipo, posicion, estado, motivo,
-  productIds, objectKeyBase` (`carpeta` es la del producto, `archivo` la ruta
-  relativa completa, `tipo` sale de la subcarpeta de clasificación y es
-  `sin-clasificar` cuando no hay).
+  productIds, objectKeyBase` (`carpeta` es la que contiene el archivo,
+  `archivo` la ruta relativa completa, y `tipo` es `principal` o `galeria`
+  según la posición — sirve para verificar de un vistazo qué archivo quedó
+  como portada antes de la carga real).
   `estado` es `ok` | `omitido` | `error`. Revisar los `error` es el paso
   operativo después de cada corrida.
 
@@ -90,49 +111,6 @@ intermedias (una por marca, p. ej.) no molestan.
 - En el bucket la carpeta del producto es **`{referencia}-{nombre}`** en slug
   (`1001-fruco-tomate-4350-g`), o sea el nombre de la carpeta de origen sin
   el consecutivo y normalizado.
-
-#### Clasificación por tipo (opcional, recomendada)
-
-Dentro de la carpeta del producto se pueden añadir subcarpetas que declaran
-**qué muestra** cada foto:
-
-```
-399/
-  1.FRUCO 2000X2000 PX/
-    40-28319-FRUCO MAYONESA SQUEEZE 330 G/
-      p-producto/            → principal          posiciones 0, 1, …
-        40-28319-….png
-        40B-28319-….png
-      d-detalle/             → detalle
-        40C-28319-….png
-      tn-tabla-nutricional/  → tabla nutricional
-        40D-28319-….png
-```
-
-- Se acepta el prefijo solo (`p`, `d`, `tn`) o con sufijo descriptivo
-  (`p-producto`, `tn-tabla-nutricional`), sin distinguir mayúsculas ni acentos.
-- **El tipo manda sobre la letra.** Con clasificación, la posición sale del
-  tipo (`principal` → `detalle` → `tabla_nutricional`) y dentro de cada tipo
-  se respeta la letra del consecutivo. Así la posición 0 —la miniatura del
-  catálogo— es siempre una foto del producto, aunque el proveedor haya puesto
-  la tabla nutricional en el archivo sin letra.
-- **Es por producto, no global**: un producto sin subcarpetas sigue usando la
-  letra del consecutivo. Se pueden mezclar productos clasificados y sin
-  clasificar en la misma entrega.
-- Un producto de una sola imagen va en `p-` y es la primaria. Las carpetas
-  ausentes no son error.
-- Si un producto **no tiene ninguna `p-`**, la posición 0 la ocupa el primer
-  tipo que exista. Revisar esos casos en el CSV: una tabla nutricional como
-  miniatura del catálogo es peor que un placeholder.
-
-El tipo queda en `ProductImage.kind` y el API lo expone como `tipo` en
-`imagenes[]`, para que la UI decida (p. ej. sacar la tabla nutricional del
-carrusel y darle su propia pestaña). Las entregas sin clasificar dejan
-`tipo: null`.
-
-> El tipo **no se deduce del contenido** ni de la letra: el proveedor no
-> entrega esa información y el mismo tipo cae en letras distintas según el
-> producto. Lo declara quien prepara la entrega.
 
 ### Layout B — plano (`SKU.png`)
 

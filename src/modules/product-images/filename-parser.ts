@@ -10,12 +10,6 @@
  * rompe por parecer "REF" + posición 5, salvo que "REF-5" no exista.
  */
 
-/**
- * Qué muestra la imagen. Espejo del enum `ProductImageKind` de Prisma; se
- * declara aquí para que el parser no dependa del cliente generado.
- */
-export type ImageKind = 'principal' | 'detalle' | 'tabla_nutricional';
-
 export interface ParsedFilenameCandidate {
   sku: string;
   position: number;
@@ -26,8 +20,6 @@ export interface ParsedFilenameCandidate {
    * con `{referencia}-{nombre-del-producto}` en slug.
    */
   objectFolder?: string;
-  /** Tipo declarado por la subcarpeta de entrega; `null` si no se clasificó. */
-  kind?: ImageKind | null;
 }
 
 // Sufijo de copia de Windows: "(1)", " (2)".
@@ -184,98 +176,4 @@ export function parseProductFolderCandidates(
       objectFolder: folder.objectFolder,
     },
   ];
-}
-
-// =============================================================================
-// Clasificación por subcarpeta de tipo
-//
-//   64-19977-MAIZENA BUÑUELOS 300G/
-//     p-producto/            → principal   (la primera es la primaria)
-//     d-detalle/             → detalle
-//     tn-tabla-nutricional/  → tabla nutricional
-//
-// El tipo NO se deduce del contenido ni de la letra del consecutivo: la letra
-// solo indica orden de entrega y el mismo tipo cae en letras distintas según
-// el producto. Lo declara quien prepara la entrega, y punto.
-// =============================================================================
-
-/** Prefijo de la subcarpeta → tipo. `tn` antes que `t` para que no se solapen. */
-const KIND_PREFIXES: readonly (readonly [string, ImageKind])[] = [
-  ['tn', 'tabla_nutricional'],
-  ['p', 'principal'],
-  ['d', 'detalle'],
-];
-
-/** Orden en que los tipos ocupan las posiciones de la galería. */
-const KIND_ORDER: readonly ImageKind[] = [
-  'principal',
-  'detalle',
-  'tabla_nutricional',
-];
-
-/**
- * Lee el tipo de una subcarpeta de entrega. Acepta el prefijo con o sin
- * sufijo descriptivo (`p`, `p-producto`, `tn-tabla-nutricional`) y devuelve
- * `null` si la carpeta no es de clasificación — que es lo que distingue una
- * subcarpeta de tipo de la carpeta de producto que la contiene.
- */
-export function parseImageKindFolder(folderName: string): ImageKind | null {
-  const normalized = folderName
-    .trim()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-
-  for (const [prefix, kind] of KIND_PREFIXES) {
-    if (normalized === prefix || normalized.startsWith(`${prefix}-`)) {
-      return kind;
-    }
-  }
-  return null;
-}
-
-/** Posición relativa del tipo; los sin clasificar van al final. */
-export function kindRank(kind: ImageKind | null): number {
-  if (kind === null) return KIND_ORDER.length;
-  const index = KIND_ORDER.indexOf(kind);
-  return index === -1 ? KIND_ORDER.length : index;
-}
-
-export interface ClassifiedFile {
-  kind: ImageKind | null;
-  filename: string;
-}
-
-/**
- * Asigna las posiciones de la galería de UN producto a partir del tipo.
- *
- * El orden es `principal` → `detalle` → `tabla_nutricional`, y dentro de cada
- * tipo por nombre de archivo. Así la posición 0 —la que el catálogo muestra
- * como miniatura— es siempre una foto del producto y nunca una tabla
- * nutricional, sin importar qué letra le haya puesto el proveedor.
- *
- * Devuelve las posiciones en el mismo orden que `files`.
- */
-export function assignKindPositions(files: ClassifiedFile[]): number[] {
-  // Dentro de un tipo se respeta la letra del consecutivo (base, B, C, D):
-  // es el orden en que el proveedor entrega las tomas. `localeCompare` no
-  // sirve aquí porque puede ordenar "64B-" antes de "64-".
-  const ordered = files
-    .map((file, index) => ({
-      file,
-      index,
-      letter: parseGalleryPosition(file.filename) ?? Number.MAX_SAFE_INTEGER,
-    }))
-    .sort(
-      (a, b) =>
-        kindRank(a.file.kind) - kindRank(b.file.kind) ||
-        a.letter - b.letter ||
-        a.file.filename.localeCompare(b.file.filename, 'es'),
-    );
-
-  const positions = new Array<number>(files.length);
-  ordered.forEach((entry, position) => {
-    positions[entry.index] = position;
-  });
-  return positions;
 }

@@ -164,6 +164,7 @@ describe('ProductImagesService.ingestFile', () => {
     expect(result).toEqual({
       status: 'ok',
       sku: 'ABC-1',
+      position: 0,
       productIds: [100],
       objectKeyBase: expect.stringContaining('products/P010/ABC-1/') as unknown,
     });
@@ -204,57 +205,6 @@ describe('ProductImagesService.ingestFile', () => {
       ),
       expect.anything(),
       expect.anything(),
-    );
-  });
-
-  it('persiste el tipo declarado por la subcarpeta de entrega', async () => {
-    const { service, prisma } = buildService({ products: [{ id: 102 }] });
-
-    await service.ingestFile({
-      supplier,
-      candidates: [
-        {
-          sku: '19977',
-          position: 3,
-          isPrimary: false,
-          objectFolder: '19977-maizena-bunuelos-300g',
-          kind: 'tabla_nutricional',
-        },
-      ],
-      buffer: Buffer.from('contenido'),
-      sourceFilename: '64D-19977-MAIZENA BUNUELOS 300G.png',
-      dryRun: false,
-      force: false,
-    });
-
-    expect(prisma.productImage.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
-          kind: 'tabla_nutricional',
-        }) as unknown,
-        update: expect.objectContaining({
-          kind: 'tabla_nutricional',
-        }) as unknown,
-      }),
-    );
-  });
-
-  it('sin tipo declarado la columna queda en null, no en undefined', async () => {
-    const { service, prisma } = buildService({ products: [{ id: 103 }] });
-
-    await service.ingestFile({
-      supplier,
-      candidates: [{ sku: 'ABC', position: 0, isPrimary: true }],
-      buffer: Buffer.from('contenido'),
-      sourceFilename: 'ABC.png',
-      dryRun: false,
-      force: false,
-    });
-
-    expect(prisma.productImage.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({ kind: null }) as unknown,
-      }),
     );
   });
 
@@ -312,7 +262,11 @@ describe('ProductImagesService.ingestFile', () => {
       force: false,
     });
 
-    expect(result).toMatchObject({ status: 'omitido', sku: 'DEF' });
+    expect(result).toMatchObject({
+      status: 'omitido',
+      sku: 'DEF',
+      position: 0,
+    });
     expect(processor.process).not.toHaveBeenCalled();
     expect(storage.put).not.toHaveBeenCalled();
   });

@@ -106,7 +106,6 @@ export class ProductsService {
       alt: image.alt,
       position: image.position,
       esPrincipal: image.isPrimary,
-      tipo: image.kind,
     };
   }
 }

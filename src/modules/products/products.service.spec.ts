@@ -27,7 +27,6 @@ const product = {
       alt: null,
       position: 0,
       isPrimary: true,
-      kind: 'principal',
     },
   ],
 } as unknown as ProductWithRelations;
@@ -51,7 +50,6 @@ const expectedResponse = {
       alt: null,
       position: 0,
       esPrincipal: true,
-      tipo: 'principal',
     },
   ],
 };

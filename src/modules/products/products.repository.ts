@@ -22,7 +22,6 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
         alt: true;
         position: true;
         isPrimary: true;
-        kind: true;
       };
     };
   };
@@ -44,7 +43,6 @@ const PUBLIC_INCLUDE = {
       alt: true,
       position: true,
       isPrimary: true,
-      kind: true,
     },
     orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }] as const,
   },

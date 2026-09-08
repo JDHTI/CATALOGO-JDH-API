@@ -28,19 +28,6 @@ export class ProductImageDto {
 
   @ApiProperty({ example: true })
   esPrincipal!: boolean;
-
-  /**
-   * Qué muestra la imagen, declarado en la entrega del proveedor. `null` en
-   * las entregas sin clasificar. La galería viene ordenada por este criterio
-   * (`principal` → `detalle` → `tabla_nutricional`), así que la primaria es
-   * siempre una foto del producto.
-   */
-  @ApiProperty({
-    nullable: true,
-    enum: ['principal', 'detalle', 'tabla_nutricional'],
-    example: 'principal',
-  })
-  tipo!: 'principal' | 'detalle' | 'tabla_nutricional' | null;
 }
 
 /**

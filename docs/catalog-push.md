@@ -27,7 +27,7 @@ Todas las **filas** del catálogo, en el orden que exigen las llaves foráneas:
 | `categories`    | `name`                   | Hoy vacías; viajan por si se pueblan          |
 | `subcategories` | `(name, category)`       | Con la categoría ya traducida al id de destino |
 | `products`      | `producto_key`           | Detección de cambios por hash                 |
-| `product_images`| `(producto, posición)`   | Solo referencias + `kind`, ver abajo          |
+| `product_images`| `(producto, posición)`   | Solo referencias, ver abajo                   |
 
 **Los binarios NO viajan.** Las imágenes de producto y los logos ya viven en
 Cloudflare R2, que es **el mismo bucket** que usa la instancia desplegada, y

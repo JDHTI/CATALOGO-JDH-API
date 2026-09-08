@@ -18,7 +18,7 @@
  * marca) no molestan.
  */
 import { cpus } from 'node:os';
-import { basename, dirname, extname, join, relative, resolve } from 'node:path';
+import { basename, extname, join, relative, resolve } from 'node:path';
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 
 import { Logger } from '@nestjs/common';
@@ -26,13 +26,8 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../../app.module';
 import {
-  assignKindPositions,
   parseImageFilename,
-  parseImageKindFolder,
   parseProductFolderCandidates,
-  parseProductFolderName,
-  type ImageKind,
-  type ParsedFilenameCandidate,
 } from './filename-parser';
 import type { IngestOutcome, ResolvedSupplier } from './product-images.service';
 import { ProductImagesService } from './product-images.service';
@@ -50,16 +45,9 @@ const IMAGE_EXTENSIONS = new Set([
 
 interface DiscoveredFile {
   supplierFolder: string;
-  /** Carpeta que trae la referencia (`{consecutivo}-{referencia}-{nombre}`).
-   *  Con subcarpetas de tipo es la abuela del archivo, no la madre. */
+  /** Carpeta que contiene el archivo; en el layout por carpeta trae la
+   *  referencia (`{consecutivo}-{referencia}-{nombre}`). */
   parentFolder: string;
-  /** Ruta absoluta de la carpeta del producto, para agrupar sin ambigüedad. */
-  productDir: string;
-  /** Tipo declarado por la subcarpeta (`p-`/`d-`/`tn-`), o `null`. */
-  kind: ImageKind | null;
-  /** Posición asignada por tipo; solo se usa cuando el producto está
-   *  clasificado. `null` deja que manden la letra del consecutivo. */
-  position: number | null;
   relativePath: string;
   absolutePath: string;
 }
@@ -90,6 +78,18 @@ const REPORT_COLUMNS: (keyof ReportRow)[] = [
   'objectKeyBase',
 ];
 
+/**
+ * Clasificación de una imagen, derivada de su posición.
+ *
+ * Solo hay dos: la principal y el resto de la galería. No se intenta distinguir
+ * detalle de tabla nutricional porque la letra del consecutivo no mapea a un
+ * tipo estable — en una entrega la `B` es otro ángulo del producto y en otra ya
+ * es la tabla nutricional.
+ */
+function describePosition(position: number): string {
+  return position === 0 ? 'principal' : 'galeria';
+}
+
 function arg(nombre: string): string | undefined {
   const prefijo = `--${nombre}=`;
   return process.argv
@@ -115,17 +115,9 @@ async function walkSupplierFolder(
       if (entry.isDirectory()) {
         await walk(full);
       } else if (IMAGE_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
-        // Si la carpeta que contiene el archivo es de clasificación (`p-`,
-        // `d-`, `tn-`), la referencia la trae la de arriba.
-        const kind = parseImageKindFolder(basename(current));
-        const productDir = kind === null ? current : dirname(current);
-
         results.push({
           supplierFolder,
-          parentFolder: basename(productDir),
-          productDir,
-          kind,
-          position: null,
+          parentFolder: basename(current),
           relativePath: relative(rootDir, full),
           absolutePath: full,
         });
@@ -134,41 +126,7 @@ async function walkSupplierFolder(
   }
 
   await walk(rootDir);
-  return assignPositionsByProduct(results);
-}
-
-/**
- * Asigna posiciones por producto en los productos CLASIFICADOS.
- *
- * Solo entra donde al menos un archivo declara tipo: ahí la posición sale del
- * tipo (`principal` → `detalle` → `tabla_nutricional`), de modo que la
- * miniatura del catálogo sea siempre una foto del producto. Donde nadie
- * clasificó, se deja `null` y sigue mandando la letra del consecutivo, que es
- * el comportamiento anterior.
- */
-function assignPositionsByProduct(files: DiscoveredFile[]): DiscoveredFile[] {
-  const byProduct = new Map<string, DiscoveredFile[]>();
-  for (const file of files) {
-    const group = byProduct.get(file.productDir);
-    if (group) group.push(file);
-    else byProduct.set(file.productDir, [file]);
-  }
-
-  for (const group of byProduct.values()) {
-    if (!group.some((file) => file.kind !== null)) continue;
-
-    const positions = assignKindPositions(
-      group.map((file) => ({
-        kind: file.kind,
-        filename: basename(file.absolutePath),
-      })),
-    );
-    group.forEach((file, index) => {
-      file.position = positions[index];
-    });
-  }
-
-  return files;
+  return results;
 }
 
 /**
@@ -230,14 +188,14 @@ function outcomeToRow(
     archivo: file.relativePath,
     carpeta: file.parentFolder,
     proveedor: supplierCode,
-    tipo: file.kind ?? 'sin-clasificar',
-    posicion: file.position === null ? '' : String(file.position),
   };
 
   if (outcome.status === 'error') {
     return {
       ...base,
       sku: '',
+      tipo: '',
+      posicion: '',
       estado: 'error',
       motivo: outcome.motivo,
       productIds: '',
@@ -248,6 +206,8 @@ function outcomeToRow(
     return {
       ...base,
       sku: outcome.sku,
+      tipo: describePosition(outcome.position),
+      posicion: String(outcome.position),
       estado: 'omitido',
       motivo: outcome.motivo,
       productIds: outcome.productIds.join('|'),
@@ -257,6 +217,8 @@ function outcomeToRow(
   return {
     ...base,
     sku: outcome.sku,
+    tipo: describePosition(outcome.position),
+    posicion: String(outcome.position),
     estado: 'ok',
     motivo: '',
     productIds: outcome.productIds.join('|'),
@@ -307,8 +269,8 @@ async function processSupplierFolder(
         carpeta: folderName,
         proveedor: '',
         sku: '',
-        tipo: file.kind ?? 'sin-clasificar',
-        posicion: file.position === null ? '' : String(file.position),
+        tipo: '',
+        posicion: '',
         estado: 'error',
         motivo: `Proveedor no encontrado para la carpeta "${folderName}"`,
         productIds: '',
@@ -325,39 +287,6 @@ async function processSupplierFolder(
   });
 }
 
-/**
- * Candidatos de referencia + posición para un archivo.
- *
- * Con el producto clasificado la posición ya está fijada por el tipo, así que
- * hay un único candidato. Sin clasificar se cae al comportamiento anterior:
- * referencia de la carpeta con la letra del consecutivo, y como último recurso
- * el nombre del archivo (layout plano `SKU.png`).
- */
-function buildCandidates(
-  file: DiscoveredFile,
-  sourceFilename: string,
-): ParsedFilenameCandidate[] {
-  if (file.position !== null) {
-    const folder = parseProductFolderName(file.parentFolder);
-    if (folder) {
-      return [
-        {
-          sku: folder.ref,
-          position: file.position,
-          isPrimary: file.position === 0,
-          objectFolder: folder.objectFolder,
-          kind: file.kind,
-        },
-      ];
-    }
-  }
-
-  return [
-    ...parseProductFolderCandidates(file.parentFolder, sourceFilename),
-    ...parseImageFilename(sourceFilename),
-  ];
-}
-
 async function processFile(
   service: ProductImagesService,
   supplier: ResolvedSupplier,
@@ -369,19 +298,25 @@ async function processFile(
     archivo: file.relativePath,
     carpeta: file.parentFolder,
     proveedor: supplier.code,
-    tipo: file.kind ?? 'sin-clasificar',
-    posicion: file.position === null ? '' : String(file.position),
   };
 
   try {
     const buffer = await readFile(file.absolutePath);
     const sourceFilename = basename(file.absolutePath);
-    const candidates = buildCandidates(file, sourceFilename);
+    // La carpeta del producto manda cuando sigue el layout
+    // `{consecutivo}-{referencia}-{nombre}`; si no, se lee el nombre del
+    // archivo (layout plano `SKU.png`).
+    const candidates = [
+      ...parseProductFolderCandidates(file.parentFolder, sourceFilename),
+      ...parseImageFilename(sourceFilename),
+    ];
 
     if (candidates.length === 0) {
       return {
         ...base,
         sku: '',
+        tipo: '',
+        posicion: '',
         estado: 'error',
         motivo:
           'No se pudo derivar una referencia de la carpeta ni del archivo',
@@ -404,6 +339,8 @@ async function processFile(
     return {
       ...base,
       sku: '',
+      tipo: '',
+      posicion: '',
       estado: 'error',
       motivo: (error as Error).message,
       productIds: '',
