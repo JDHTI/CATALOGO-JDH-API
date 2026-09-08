@@ -14,6 +14,12 @@ export interface ParsedFilenameCandidate {
   sku: string;
   position: number;
   isPrimary: boolean;
+  /**
+   * Carpeta a usar en la key del bucket. Si no viene, se usa el propio `sku`
+   * (layout plano histórico). El layout por carpeta de producto la rellena
+   * con `{referencia}-{nombre-del-producto}` en slug.
+   */
+  objectFolder?: string;
 }
 
 // Sufijo de copia de Windows: "(1)", " (2)".
@@ -61,4 +67,113 @@ export function parseImageFilename(
   }
 
   return candidates;
+}
+
+// =============================================================================
+// Layout «carpeta de producto» (entregas tipo Unilever)
+//
+//   1.FRUCO 2000X2000 PX/                       ← carpeta de marca (se ignora)
+//     1-1001-FRUCO TOMATE 4350 G/               ← consecutivo-REFERENCIA-nombre
+//       1-1001-FRUCO TOMATE 4350 G.png          ← principal   (posición 0)
+//       1B-1001-FRUCO TOMATE 4350 G.png         ← galería     (posición 1)
+//       1C-1001-FRUCO TOMATE 4350 G.png         ← galería     (posición 2)
+//
+// La REFERENCIA la manda la carpeta (es el segmento del medio). El consecutivo
+// es interno del proveedor y se descarta; en el bucket la carpeta del producto
+// es `{referencia}-{nombre}` en slug.
+// =============================================================================
+
+/** `{consecutivo}-{referencia}-{nombre}` en el nombre de la carpeta. */
+const PRODUCT_FOLDER = /^(\d+)-([^-\s]+)-(.+)$/;
+/** `{consecutivo}{letra?}-{referencia}-{nombre}` en el nombre del archivo. */
+const PRODUCT_FILE = /^(\d+)([A-Za-z]?)-([^-\s]+)-(.+)$/;
+
+export interface ParsedProductFolder {
+  /** Referencia del ERP (`Product.sku`), tomada del segmento del medio. */
+  ref: string;
+  /** Nombre del producto tal como lo entregó el proveedor, sin consecutivo. */
+  productName: string;
+  /** Carpeta del producto en el bucket: `{ref}-{nombre}` en slug. */
+  objectFolder: string;
+}
+
+/** Slug estable para la key del bucket: sin acentos, sin símbolos, minúsculas. */
+function slug(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Lee `{consecutivo}-{referencia}-{nombre}` de una carpeta de producto.
+ * Devuelve `null` si el nombre no sigue el layout (p. ej. la carpeta de
+ * proveedor del layout plano), para que quien llama pueda caer al parser
+ * por nombre de archivo.
+ */
+export function parseProductFolderName(
+  folderName: string,
+): ParsedProductFolder | null {
+  const match = folderName.trim().match(PRODUCT_FOLDER);
+  if (!match) return null;
+
+  const ref = match[2].trim().toUpperCase();
+  const productName = match[3].trim().replace(/\s+/g, ' ');
+  const nameSlug = slug(productName);
+  if (!ref || !nameSlug) return null;
+
+  return {
+    ref,
+    productName,
+    objectFolder: `${slug(ref)}-${nameSlug}`,
+  };
+}
+
+/**
+ * Posición de galería a partir del sufijo de letra del consecutivo: sin letra
+ * (o `A`) es la principal, `B` la segunda, `C` la tercera, y así. Devuelve
+ * `null` si el archivo no sigue el layout — sin letra no se puede deducir la
+ * posición, y adivinar 0 sobreescribiría la imagen principal.
+ */
+export function parseGalleryPosition(filename: string): number | null {
+  const basename = filename.replace(/\.[^.]+$/, '');
+  const match = basename
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(WINDOWS_COPY_PAREN, '')
+    .replace(WINDOWS_COPY_WORD, '')
+    .trim()
+    .match(PRODUCT_FILE);
+  if (!match) return null;
+
+  const letter = match[2].toUpperCase();
+  return letter ? letter.charCodeAt(0) - 'A'.charCodeAt(0) : 0;
+}
+
+/**
+ * Candidato derivado del layout por carpeta de producto: referencia de la
+ * carpeta, posición de la letra del archivo. Devuelve `[]` si la carpeta o el
+ * archivo no siguen el layout, para que el llamador caiga a
+ * `parseImageFilename`.
+ */
+export function parseProductFolderCandidates(
+  folderName: string,
+  filename: string,
+): ParsedFilenameCandidate[] {
+  const folder = parseProductFolderName(folderName);
+  if (!folder) return [];
+
+  const position = parseGalleryPosition(filename);
+  if (position === null) return [];
+
+  return [
+    {
+      sku: folder.ref,
+      position,
+      isPrimary: position === 0,
+      objectFolder: folder.objectFolder,
+    },
+  ];
 }

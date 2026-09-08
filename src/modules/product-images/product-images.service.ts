@@ -136,7 +136,10 @@ export class ProductImagesService {
       }
     }
 
-    const objectKeyBase = `products/${params.supplier.code}/${candidate.sku}/${checksum.slice(0, 8)}`;
+    // Carpeta del producto en el bucket. El layout por carpeta la trae como
+    // `{referencia}-{nombre}`; el layout plano cae al propio SKU.
+    const objectFolder = candidate.objectFolder ?? candidate.sku;
+    const objectKeyBase = `products/${params.supplier.code}/${objectFolder}/${checksum.slice(0, 8)}`;
 
     if (params.dryRun) {
       return { status: 'ok', sku: candidate.sku, productIds, objectKeyBase };
@@ -146,7 +149,7 @@ export class ProductImagesService {
 
     const originalExtension =
       extname(params.sourceFilename).toLowerCase() || '.bin';
-    const originalObjectKey = `originals/products/${params.supplier.code}/${candidate.sku}/${checksum.slice(0, 8)}${originalExtension}`;
+    const originalObjectKey = `originals/products/${params.supplier.code}/${objectFolder}/${checksum.slice(0, 8)}${originalExtension}`;
 
     await this.storage.put(originalObjectKey, params.buffer, {
       cacheControl: 'public, max-age=31536000, immutable',
