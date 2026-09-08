@@ -55,8 +55,10 @@ pnpm images:ingest -- --dir=./entradas --dry-run --force --concurrencia=4
 - `--force` reprocesa aunque el checksum no haya cambiado (por defecto se
   salta: ver idempotencia más abajo).
 - Escribe `reports/images-ingest-{timestamp}.csv` con una fila por archivo:
-  `archivo, carpeta, proveedor, sku, estado, motivo, productIds, objectKeyBase`
-  (`carpeta` es la que contiene el archivo, `archivo` la ruta relativa completa).
+  `archivo, carpeta, proveedor, sku, tipo, posicion, estado, motivo,
+  productIds, objectKeyBase` (`carpeta` es la del producto, `archivo` la ruta
+  relativa completa, `tipo` sale de la subcarpeta de clasificación y es
+  `sin-clasificar` cuando no hay).
   `estado` es `ok` | `omitido` | `error`. Revisar los `error` es el paso
   operativo después de cada corrida.
 
@@ -88,6 +90,49 @@ intermedias (una por marca, p. ej.) no molestan.
 - En el bucket la carpeta del producto es **`{referencia}-{nombre}`** en slug
   (`1001-fruco-tomate-4350-g`), o sea el nombre de la carpeta de origen sin
   el consecutivo y normalizado.
+
+#### Clasificación por tipo (opcional, recomendada)
+
+Dentro de la carpeta del producto se pueden añadir subcarpetas que declaran
+**qué muestra** cada foto:
+
+```
+399/
+  1.FRUCO 2000X2000 PX/
+    40-28319-FRUCO MAYONESA SQUEEZE 330 G/
+      p-producto/            → principal          posiciones 0, 1, …
+        40-28319-….png
+        40B-28319-….png
+      d-detalle/             → detalle
+        40C-28319-….png
+      tn-tabla-nutricional/  → tabla nutricional
+        40D-28319-….png
+```
+
+- Se acepta el prefijo solo (`p`, `d`, `tn`) o con sufijo descriptivo
+  (`p-producto`, `tn-tabla-nutricional`), sin distinguir mayúsculas ni acentos.
+- **El tipo manda sobre la letra.** Con clasificación, la posición sale del
+  tipo (`principal` → `detalle` → `tabla_nutricional`) y dentro de cada tipo
+  se respeta la letra del consecutivo. Así la posición 0 —la miniatura del
+  catálogo— es siempre una foto del producto, aunque el proveedor haya puesto
+  la tabla nutricional en el archivo sin letra.
+- **Es por producto, no global**: un producto sin subcarpetas sigue usando la
+  letra del consecutivo. Se pueden mezclar productos clasificados y sin
+  clasificar en la misma entrega.
+- Un producto de una sola imagen va en `p-` y es la primaria. Las carpetas
+  ausentes no son error.
+- Si un producto **no tiene ninguna `p-`**, la posición 0 la ocupa el primer
+  tipo que exista. Revisar esos casos en el CSV: una tabla nutricional como
+  miniatura del catálogo es peor que un placeholder.
+
+El tipo queda en `ProductImage.kind` y el API lo expone como `tipo` en
+`imagenes[]`, para que la UI decida (p. ej. sacar la tabla nutricional del
+carrusel y darle su propia pestaña). Las entregas sin clasificar dejan
+`tipo: null`.
+
+> El tipo **no se deduce del contenido** ni de la letra: el proveedor no
+> entrega esa información y el mismo tipo cae en letras distintas según el
+> producto. Lo declara quien prepara la entrega.
 
 ### Layout B — plano (`SKU.png`)
 

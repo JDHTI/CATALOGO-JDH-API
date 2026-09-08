@@ -162,12 +162,32 @@ model Product {
   @@map("products")
 }
 
+/// Qué muestra una imagen de producto.
+///
+/// Lo declara la subcarpeta de entrega (`p-`, `d-`, `tn-`), NO se deduce del
+/// contenido: el proveedor no entrega esa información y la letra del
+/// consecutivo solo indica orden de entrega. Queda `null` en las entregas sin
+/// clasificar (layout de letras `B`/`C`/`D`).
+enum ProductImageKind {
+  /// Foto del producto. La primera de estas es la primaria del catálogo.
+  principal
+  /// Detalle: otro ángulo, ingredientes, uso.
+  detalle
+  /// Tabla nutricional.
+  tabla_nutricional
+
+  @@map("product_image_kind")
+}
+
 /// Imagen de producto. Los binarios viven en el bucket S3/MinIO ya
 /// configurado; aquí solo se guarda la referencia. Se pueblan con
 /// `pnpm images:ingest` (ver docs/product-images.md).
 model ProductImage {
   id        Int    @id @default(autoincrement())
   productId Int    @map("product_id")
+
+  /// Qué muestra la imagen. `null` en entregas sin clasificar.
+  kind ProductImageKind?
 
   /// Prefijo base del objeto en el bucket, sin extensión ni variante
   /// (p. ej. `products/{supplierCode}/{sku}/{hash8}`). Las tres variantes

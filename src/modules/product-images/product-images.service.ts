@@ -192,6 +192,7 @@ export class ProductImagesService {
           bytes: params.buffer.byteLength,
           position: candidate.position,
           isPrimary: candidate.isPrimary,
+          kind: candidate.kind ?? null,
         },
         update: {
           objectKey: objectKeyBase,
@@ -206,6 +207,7 @@ export class ProductImagesService {
           height: processed.originalHeight,
           bytes: params.buffer.byteLength,
           isPrimary: candidate.isPrimary,
+          kind: candidate.kind ?? null,
         },
       });
     }

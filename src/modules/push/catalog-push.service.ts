@@ -758,6 +758,7 @@ export class CatalogPushService {
         alt: local.alt,
         position: local.position,
         isPrimary: local.isPrimary,
+        kind: local.kind,
       };
       const rowKey = key(remoteProductId, local.position);
       seen.add(rowKey);
@@ -782,7 +783,8 @@ export class CatalogPushService {
         existing.height === data.height &&
         existing.bytes === data.bytes &&
         existing.alt === data.alt &&
-        existing.isPrimary === data.isPrimary;
+        existing.isPrimary === data.isPrimary &&
+        existing.kind === data.kind;
 
       if (same) {
         counters.unchanged += 1;

@@ -1,6 +1,9 @@
 import {
+  assignKindPositions,
+  kindRank,
   parseGalleryPosition,
   parseImageFilename,
+  parseImageKindFolder,
   parseProductFolderCandidates,
   parseProductFolderName,
 } from './filename-parser';
@@ -118,6 +121,118 @@ describe('parseGalleryPosition', () => {
     // Adivinar 0 aquí sobreescribiría la imagen principal del producto.
     expect(parseGalleryPosition('C100306453_7702047038796.NP.tif')).toBeNull();
     expect(parseGalleryPosition('1001.png')).toBeNull();
+  });
+});
+
+describe('parseImageKindFolder', () => {
+  it('lee el prefijo con o sin sufijo descriptivo', () => {
+    expect(parseImageKindFolder('p-producto')).toBe('principal');
+    expect(parseImageKindFolder('p')).toBe('principal');
+    expect(parseImageKindFolder('d-detalle')).toBe('detalle');
+    expect(parseImageKindFolder('d')).toBe('detalle');
+    expect(parseImageKindFolder('tn-tabla-nutricional')).toBe(
+      'tabla_nutricional',
+    );
+    expect(parseImageKindFolder('tn')).toBe('tabla_nutricional');
+  });
+
+  it('tn no se confunde con d ni con p', () => {
+    // Si 'd' se probara antes que 'tn' por orden de prefijos, 'tn-...' seguiria
+    // funcionando, pero el orden importa si algun dia se agrega un prefijo 't'.
+    expect(parseImageKindFolder('tn-tabla')).toBe('tabla_nutricional');
+    expect(parseImageKindFolder('TN-Tabla Nutricional')).toBe(
+      'tabla_nutricional',
+    );
+  });
+
+  it('normaliza mayusculas y acentos', () => {
+    expect(parseImageKindFolder('P-Producto')).toBe('principal');
+    expect(parseImageKindFolder('tn-tabla-nutricionál')).toBe(
+      'tabla_nutricional',
+    );
+  });
+
+  it('devuelve null para carpetas que no son de clasificacion', () => {
+    // Esto es lo que distingue una subcarpeta de tipo de la carpeta de producto.
+    expect(parseImageKindFolder('64-19977-MAIZENA BUÑUELOS 300G')).toBeNull();
+    expect(parseImageKindFolder('1.FRUCO 2000X2000 PX')).toBeNull();
+    expect(parseImageKindFolder('399')).toBeNull();
+    expect(parseImageKindFolder('detalle')).toBeNull();
+  });
+});
+
+describe('assignKindPositions', () => {
+  it('ordena principal, luego detalle, luego tabla nutricional', () => {
+    const files = [
+      { kind: 'tabla_nutricional' as const, filename: '64D-19977-X.png' },
+      { kind: 'principal' as const, filename: '64-19977-X.png' },
+      { kind: 'detalle' as const, filename: '64C-19977-X.png' },
+      { kind: 'principal' as const, filename: '64B-19977-X.png' },
+    ];
+
+    // La entrada esta desordenada a proposito: las posiciones se devuelven en
+    // el orden de `files`, no en el orden ordenado.
+    expect(assignKindPositions(files)).toEqual([3, 0, 2, 1]);
+  });
+
+  it('la posicion 0 es una foto de producto aunque la letra diga otra cosa', () => {
+    // El proveedor puso la tabla nutricional en el archivo SIN letra, que en
+    // el layout viejo habria sido la primaria del catalogo.
+    const files = [
+      { kind: 'tabla_nutricional' as const, filename: '64-19977-X.png' },
+      { kind: 'principal' as const, filename: '64C-19977-X.png' },
+    ];
+
+    const positions = assignKindPositions(files);
+
+    expect(positions).toEqual([1, 0]);
+    expect(files[positions.indexOf(0)].kind).toBe('principal');
+  });
+
+  it('dentro de un tipo respeta la letra del consecutivo, no el orden de texto', () => {
+    // localeCompare puede poner "64B-" antes de "64-"; la letra manda.
+    const files = [
+      { kind: 'principal' as const, filename: '64B-19977-X.png' },
+      { kind: 'principal' as const, filename: '64-19977-X.png' },
+      { kind: 'principal' as const, filename: '64C-19977-X.png' },
+    ];
+
+    expect(assignKindPositions(files)).toEqual([1, 0, 2]);
+  });
+
+  it('un producto de una sola imagen queda en la posicion 0', () => {
+    expect(
+      assignKindPositions([{ kind: 'principal', filename: '64-19977-X.png' }]),
+    ).toEqual([0]);
+  });
+
+  it('los sin clasificar van al final', () => {
+    const files = [
+      { kind: null, filename: 'suelto.png' },
+      { kind: 'principal' as const, filename: '64-19977-X.png' },
+    ];
+
+    expect(assignKindPositions(files)).toEqual([1, 0]);
+  });
+
+  it('sin ninguna principal no se promueve nada a la posicion 0 por tipo', () => {
+    // Queda tabla_nutricional en 0 porque es lo unico que hay; el CLI lo
+    // reporta y la decision de que hacer es del operador.
+    const files = [
+      { kind: 'tabla_nutricional' as const, filename: '64D-19977-X.png' },
+      { kind: 'detalle' as const, filename: '64C-19977-X.png' },
+    ];
+
+    const positions = assignKindPositions(files);
+    expect(files[positions.indexOf(0)].kind).toBe('detalle');
+  });
+});
+
+describe('kindRank', () => {
+  it('ordena los tipos y deja null al final', () => {
+    expect(kindRank('principal')).toBeLessThan(kindRank('detalle'));
+    expect(kindRank('detalle')).toBeLessThan(kindRank('tabla_nutricional'));
+    expect(kindRank('tabla_nutricional')).toBeLessThan(kindRank(null));
   });
 });
 
