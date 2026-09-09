@@ -231,6 +231,55 @@ export function parseGalleryPosition(
   return letter ? letter.charCodeAt(0) - 'A'.charCodeAt(0) : 0;
 }
 
+// =============================================================================
+// Layout «carpeta = referencia, posición por orden»
+//
+//   18271/                                  ← la carpeta ES la referencia
+//     Hero_Image_30243107_ESP-01.png        ← principal   (posición 0)
+//     Hero_Image_30243107_ESP-06.png        ← galería     (posición 1)
+//
+// Acá el nombre del archivo no aporta nada: lo pone el proveedor y sus sufijos
+// (`-01`, `-06`, `_S04`) no son posiciones. Lo único que ordena la galería es
+// la posición del archivo dentro de la carpeta, así que la calcula quien lista
+// el directorio y la pasa como `orderIndex`.
+// =============================================================================
+
+/**
+ * Orden natural de los archivos de una carpeta de referencia: comparación
+ * numérica, para que `S2` vaya antes que `S10` y no al revés.
+ */
+export function compareDeliveryFilenames(a: string, b: string): number {
+  return a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' });
+}
+
+/**
+ * Candidato del layout más simple: la carpeta es la referencia y la posición
+ * sale del orden del archivo dentro de ella.
+ *
+ * Es el ÚLTIMO recurso a propósito. Se prueba después de los layouts con
+ * consecutivo y del nombre de archivo, así que solo gana cuando ninguno de
+ * esos resolvió un producto: una entrega que ya funcionaba conserva sus
+ * posiciones en vez de renumerarse por el orden del directorio.
+ */
+export function parseReferenceFolderCandidate(
+  folderName: string,
+  orderIndex: number,
+): ParsedFilenameCandidate[] {
+  const ref = folderName.trim().toUpperCase();
+  const refSlug = slug(ref);
+  if (!refSlug) return [];
+  if (!Number.isInteger(orderIndex) || orderIndex < 0) return [];
+
+  return [
+    {
+      sku: ref,
+      position: orderIndex,
+      isPrimary: orderIndex === 0,
+      objectFolder: refSlug,
+    },
+  ];
+}
+
 /**
  * Candidatos derivados del layout por carpeta de producto: referencia de la
  * carpeta, posición de la letra del archivo, uno por cada lectura de la

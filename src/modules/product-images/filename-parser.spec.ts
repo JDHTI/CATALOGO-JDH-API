@@ -1,8 +1,10 @@
 import {
+  compareDeliveryFilenames,
   parseGalleryPosition,
   parseImageFilename,
   parseProductFolderCandidates,
   parseProductFolderName,
+  parseReferenceFolderCandidate,
 } from './filename-parser';
 
 describe('parseImageFilename', () => {
@@ -230,5 +232,51 @@ describe('parseProductFolderCandidates', () => {
         'C100306453_7702047038796.NP.tif',
       ),
     ).toEqual([]);
+  });
+});
+
+describe('compareDeliveryFilenames', () => {
+  it('ordena por número, no por texto', () => {
+    expect(
+      ['30240063_S10.jpg', '30240063_S2.jpg', '30240063_S1.jpg'].sort(
+        compareDeliveryFilenames,
+      ),
+    ).toEqual(['30240063_S1.jpg', '30240063_S2.jpg', '30240063_S10.jpg']);
+  });
+
+  it('el sufijo de copia de Windows no altera el orden relativo', () => {
+    expect(
+      [
+        'Hero_Image_30242870_ESP-06.png',
+        'Hero_Image_30242870_ESP-01 (1).png',
+      ].sort(compareDeliveryFilenames),
+    ).toEqual([
+      'Hero_Image_30242870_ESP-01 (1).png',
+      'Hero_Image_30242870_ESP-06.png',
+    ]);
+  });
+});
+
+describe('parseReferenceFolderCandidate', () => {
+  it('la carpeta es la referencia y el orden es la posición', () => {
+    expect(parseReferenceFolderCandidate('18271', 0)).toEqual([
+      { sku: '18271', position: 0, isPrimary: true, objectFolder: '18271' },
+    ]);
+    expect(parseReferenceFolderCandidate('18271', 1)).toEqual([
+      { sku: '18271', position: 1, isPrimary: false, objectFolder: '18271' },
+    ]);
+  });
+
+  it('normaliza la referencia y su carpeta en el bucket', () => {
+    expect(parseReferenceFolderCandidate('  ref-90a  ', 2)).toEqual([
+      { sku: 'REF-90A', position: 2, isPrimary: false, objectFolder: 'ref-90a' },
+    ]);
+  });
+
+  it('rechaza carpetas vacías o índices inválidos', () => {
+    expect(parseReferenceFolderCandidate('   ', 0)).toEqual([]);
+    expect(parseReferenceFolderCandidate('...', 0)).toEqual([]);
+    expect(parseReferenceFolderCandidate('18271', -1)).toEqual([]);
+    expect(parseReferenceFolderCandidate('18271', 1.5)).toEqual([]);
   });
 });
