@@ -52,6 +52,35 @@ fuera del mapeo y del hash del DWH. Un sync puede actualizar el resto de la fila
 sin borrar contenido editorial; los textos se cargan por lotes con el flujo de
 [`product-content-migration.md`](./product-content-migration.md).
 
+## Propiedad de los campos y protección
+
+La frontera de escritura del sync es explícita. El DWH puede actualizar los
+campos del mapeo anterior, además de `active`, `sourceHash` y `syncedAt`. El
+catálogo conserva los campos que se gestionan fuera del DWH:
+
+| Campo propio del catálogo | Cómo se actualiza |
+| ------------------------- | ----------------- |
+| `ProductImage` e imágenes | `images:ingest`; el sync de productos no toca filas ni referencias de imagen. |
+| `longDescription`, `seoTitle`, `seoDescription` | `product-content:import`; una sincronización DWH nunca los incluye en el update. |
+| `price`, `priceCurrency`, `priceUpdatedAt` | Flujo de precios futuro; actualmente el DWH no los provee. |
+| `categoryId`, `subcategoryId` | Categorización del catálogo; el DWH no los puebla. |
+| `Supplier.logo*`, `Brand.logo*` | Gestión de logos; el upsert del DWH solo actualiza el nombre de la clasificación. |
+
+Para una fila existente, el servicio proyecta de forma explícita el conjunto de
+campos DWH antes de ejecutar el `update`. No reutiliza el objeto completo de una
+fila ni hace un `upsert` que pueda poner a `null` campos propios. Si un producto
+deja de aparecer en la extracción se marca `active=false`; nunca se borra la
+fila, por lo que sus imágenes, contenido editorial, precios y categorización se
+conservan si el producto vuelve a aparecer.
+
+El `push:catalogo` es una operación separada y publica el estado completo del
+catálogo local, incluidos los campos propios. Por eso el orden operativo es:
+
+1. sincronizar el DWH en la base local;
+2. ejecutar las cargas de imágenes, contenido o precios;
+3. revisar los contadores y una muestra;
+4. ejecutar `push:catalogo` para replicar ese estado al destino.
+
 ## Semántica de "proveedor"
 
 `cod_proveedor`/`proveedor` es una **clasificación comercial/de mercadeo** del

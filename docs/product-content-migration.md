@@ -45,6 +45,12 @@ El contenido se basa en el nombre, la presentación visible y el texto legible
 del empaque. No afirma ingredientes, beneficios nutricionales, certificaciones,
 disponibilidad, precios ni condiciones comerciales que no estén en la fuente.
 
+El lote siguiente está en
+[`data/product-content/lot-2026-09-09-image-products.json`](../data/product-content/lot-2026-09-09-image-products.json).
+Contiene 99 productos activos que recibieron imagen primaria después del primer
+lote. La evidencia conserva la posición real de la imagen y su SHA-256; el
+importador rechaza cualquier registro cuya imagen haya sido reemplazada.
+
 ## Flujo para cada lote
 
 1. Generar un inventario actual:
@@ -123,6 +129,12 @@ inventario. El nuevo checksum debe entrar en `evidence`; no reutilizar el de la
 entrega anterior. Se puede migrar un lote mixto: los productos sin imagen o
 inactivos quedarán reportados como error y los válidos se aplicarán solo si se
 corrige el archivo y se vuelve a ejecutar la validación.
+
+La ingesta y el sync del DWH no generan descripciones automáticamente. La
+ingesta solo crea o actualiza referencias de imagen y el sync solo actualiza los
+campos naturales del DWH. Por eso una nueva imagen dispara este flujo editorial
+de forma explícita; repetirlo no modifica textos existentes salvo que se use
+`--replace`.
 
 Para auditar una corrida, conservar el JSON de entrada, la salida del CLI y el
 checksum de cada imagen. Un producto con texto existente se reporta como
