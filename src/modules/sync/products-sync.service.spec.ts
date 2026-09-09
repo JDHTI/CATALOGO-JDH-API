@@ -229,6 +229,34 @@ describe('ProductsSyncService', () => {
     expect(prisma.product.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { productoKey: 'k1' } }),
     );
+
+    const updateCalls = prisma.product.update.mock.calls as unknown as Array<
+      [{ data: Record<string, unknown> }]
+    >;
+    const updateArgs = updateCalls[0][0];
+    expect(updateArgs.data).toEqual(
+      expect.objectContaining({
+        sku: 'SKU-1',
+        name: 'PRODUCTO UNO',
+        shortDescription: 'DESCRIPCION CORTA',
+      }),
+    );
+    for (const catalogField of [
+      'longDescription',
+      'seoTitle',
+      'seoDescription',
+      'price',
+      'priceCurrency',
+      'priceUpdatedAt',
+      'categoryId',
+      'subcategoryId',
+    ]) {
+      expect(updateArgs.data).not.toHaveProperty(catalogField);
+    }
+
+    const updateManyCalls = prisma.product.updateMany.mock
+      .calls as unknown as Array<[{ data: Record<string, unknown> }]>;
+    expect(updateManyCalls[0][0].data).toEqual({ active: false });
   });
 
   it('marca el SyncRun como error si la extracción falla', async () => {

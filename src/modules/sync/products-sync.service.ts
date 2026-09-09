@@ -49,6 +49,34 @@ const PRODUCTS_EXTRACT_SQL = `
 
 const BATCH_SIZE = 1_000;
 
+/**
+ * Campos que son propiedad del DWH dentro de `Product`.
+ *
+ * Los campos editoriales, imágenes, categorías y precios quedan fuera de este
+ * tipo a propósito. Mantener la lista explícita hace que una modificación del
+ * sync sea revisable y evita que un update del DWH termine sobrescribiendo
+ * contenido gestionado por el catálogo.
+ */
+type DwhManagedProductData = Pick<
+  Prisma.ProductCreateManyInput,
+  | 'productoKey'
+  | 'sku'
+  | 'name'
+  | 'shortDescription'
+  | 'tipoItem'
+  | 'origen'
+  | 'linea'
+  | 'sublinea'
+  | 'grupo'
+  | 'pesoKg'
+  | 'factorEmpaque'
+  | 'active'
+  | 'supplierId'
+  | 'brandId'
+  | 'manufacturerId'
+  | 'dwhCreatedAt'
+>;
+
 /** Proveedor de respaldo para filas sin clasificación en el ERP. */
 const FALLBACK_SUPPLIER_CODE = 'SIN_CLASIFICAR';
 
@@ -293,7 +321,11 @@ export class ProductsSyncService implements OnModuleInit {
       } else {
         await this.prisma.product.update({
           where: { productoKey: row.producto_key },
-          data: { ...data, sourceHash, syncedAt: runDate },
+          data: {
+            ...this.toDwhUpdateData(data),
+            sourceHash,
+            syncedAt: runDate,
+          },
         });
         counters.updated += 1;
       }
@@ -381,7 +413,7 @@ export class ProductsSyncService implements OnModuleInit {
   private mapRow(
     row: DwhProductRow,
     caches: LookupCaches,
-  ): Omit<Prisma.ProductCreateManyInput, 'sourceHash' | 'syncedAt'> {
+  ): DwhManagedProductData {
     const supplierCode = row.cod_proveedor?.trim() || FALLBACK_SUPPLIER_CODE;
     const brandName = row.marca?.trim();
     const manufacturerName = row.fabricante?.trim();
@@ -406,6 +438,35 @@ export class ProductsSyncService implements OnModuleInit {
         ? (caches.manufacturers.get(manufacturerName) ?? null)
         : null,
       dwhCreatedAt: row.fecha_creacion,
+    };
+  }
+
+  /**
+   * Proyección explícita para actualizar una fila existente.
+   *
+   * `createMany` necesita todos los campos mínimos de una fila nueva, pero un
+   * update nunca debe reutilizar ese objeto por propagación accidental. Esta
+   * proyección es la frontera entre datos del DWH y datos propios del catálogo.
+   */
+  private toDwhUpdateData(
+    data: DwhManagedProductData,
+  ): Prisma.ProductUncheckedUpdateInput {
+    return {
+      sku: data.sku,
+      name: data.name,
+      shortDescription: data.shortDescription,
+      tipoItem: data.tipoItem,
+      origen: data.origen,
+      linea: data.linea,
+      sublinea: data.sublinea,
+      grupo: data.grupo,
+      pesoKg: data.pesoKg,
+      factorEmpaque: data.factorEmpaque,
+      active: data.active,
+      supplierId: data.supplierId,
+      brandId: data.brandId,
+      manufacturerId: data.manufacturerId,
+      dwhCreatedAt: data.dwhCreatedAt,
     };
   }
 
