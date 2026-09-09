@@ -85,11 +85,17 @@ pnpm images:ingest -- --dir=./entradas --dry-run --force --concurrencia=4
 
 ## Cómo deben venir los archivos
 
-Hay dos layouts admitidos. Se detectan solos por el nombre de la carpeta que
+Hay cuatro layouts admitidos. Se detectan solos por el nombre de la carpeta que
 contiene cada imagen; el recorrido es recursivo, así que las carpetas
 intermedias (una por marca, p. ej.) no molestan.
 
-### Layout A — carpeta por producto (el que usan los proveedores)
+**Cuando la imagen está en una subcarpeta, la referencia la manda la carpeta.**
+El nombre del archivo solo decide en el layout D, donde las imágenes cuelgan
+directo de la carpeta del proveedor y no hay carpeta de producto que leer. Los
+proveedores nombran los archivos como quieren, así que no son fuente confiable
+de la referencia.
+
+### Layout A — carpeta por producto con consecutivo
 
 ```
 399/                                        ← código de proveedor (o --proveedor=399)
@@ -105,14 +111,52 @@ intermedias (una por marca, p. ej.) no molestan.
 - El **consecutivo** (`1`, `40`…) es numeración interna del proveedor y se
   **descarta**: no llega al bucket ni a la base de datos.
 - La **letra del consecutivo** define la posición en la galería: sin letra (o
-  `A`) es la principal, `B` la segunda, `C` la tercera, y así. Un archivo sin
-  letra que además no siga el patrón se reporta como `error` en vez de
-  asumir posición 0 — asumirla sobreescribiría la imagen principal.
+  `A`) es la principal, `B` la segunda, `C` la tercera, y así.
 - En el bucket la carpeta del producto es **`{referencia}-{nombre}`** en slug
   (`1001-fruco-tomate-4350-g`), o sea el nombre de la carpeta de origen sin
   el consecutivo y normalizado.
 
-### Layout B — plano (`SKU.png`)
+### Layout B — igual que A pero con la referencia primero
+
+```
+1001-1-FRUCO TOMATE 4350 G/                 ← REFERENCIA-consecutivo-nombre
+  1001-1B-FRUCO TOMATE 4350 G.png           ← galería     → posición 1
+0212-01/                                    ← el nombre del producto es opcional
+  0212-01.png                               ← principal   → posición 0
+  0212-01B.png                              ← galería     → posición 1
+```
+
+`1-1001-NOMBRE` (layout A) y `1001-1-NOMBRE` (layout B) tienen exactamente la
+misma forma, así que no se elige uno: se prueban **las dos lecturas** contra la
+base y gana la que exista, empezando por la referencia más larga. Un
+consecutivo es un contador corto; una referencia es un código del ERP.
+
+### Layout C — carpeta = referencia, posición por orden ⚠️ temporal
+
+```
+1098/                                       ← código de proveedor (o --proveedor=1098)
+  18929/                                    ← la carpeta ES la referencia
+    30180284_S04.jpg                        ← principal   → posición 0
+    30180284_S06.jpg                        ← galería     → posición 1
+    30180284_S07.jpg                        ← galería     → posición 2
+```
+
+Para entregas donde los nombres de archivo no dicen nada de la posición
+(`Hero_Image_30243107_ESP-06.png`, `30180284_S04.jpg`): sus sufijos son
+numeración del proveedor, no posiciones. Acá **el nombre del archivo se ignora
+por completo** y lo único que ordena la galería es la posición del archivo
+dentro de la carpeta, en orden natural de nombre (`S2` antes que `S10`).
+
+> **Es un parche temporal.** El orden alfabético no sabe cuál foto es el
+> empaque y cuál un detalle: si la primera alfabéticamente es la equivocada, la
+> principal queda mal y hay que renombrar el archivo antes de ingestar. Mientras
+> no haya una clasificación real de las imágenes, esta variante deja el catálogo
+> con fotos y en un orden razonable; sirve para publicar, no para dar la
+> clasificación por buena.
+
+En el bucket la carpeta del producto es la referencia pelada (`1098/18929/…`).
+
+### Layout D — plano (`SKU.png`)
 
 - **Carpeta = proveedor.** El nombre de la carpeta debe ser el **código** del
   proveedor en el ERP (`Supplier.code`, el mismo que usa el sync de
@@ -130,7 +174,7 @@ intermedias (una por marca, p. ej.) no molestan.
   - Un SKU que termina en dígitos por sí mismo (`REF-2024`) nunca se rompe: el
     sufijo de galería solo se prueba si el nombre completo no encontró
     producto.
-### Común a los dos
+### Común a todos
 
 - **Formatos de entrada**: PNG, JPG/JPEG, WebP, GIF, TIF/TIFF, AVIF.
 - Fondos transparentes se aplanan a blanco automáticamente; no hace falta
@@ -159,9 +203,9 @@ Solo se suben las tres variantes. El archivo original se procesa en memoria y
 no se conserva en el bucket: si hay que regenerar variantes, se vuelve a correr
 `images:ingest` sobre la entrega del proveedor.
 
-`{carpeta}` es `{referencia}-{nombre}` en el layout A
-(`399/1001-fruco-tomate-4350-g/…`) y el SKU pelado en el layout B
-(`399/1001/…`).
+`{carpeta}` es `{referencia}-{nombre}` en los layouts A y B cuando la entrega
+trae nombre (`399/1001-fruco-tomate-4350-g/…`), y la referencia pelada cuando
+no lo trae o en los layouts C y D (`1098/18929/…`).
 
 `hash8` son los primeros 8 caracteres del checksum. Si la imagen cambia,
 cambia la key completa → `Cache-Control: public, max-age=31536000, immutable`
