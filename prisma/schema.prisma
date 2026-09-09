@@ -184,9 +184,6 @@ model ProductImage {
   /// (p. ej. `products/{supplierCode}/{sku}/{hash8}`). Las tres variantes
   /// comparten este prefijo: `{objectKey}/thumb.webp`, `/card.webp`, `/full.webp`.
   objectKey String @map("object_key")
-  /// Key del archivo original tal como llegó del proveedor (sin procesar),
-  /// conservado para poder regenerar variantes sin pedirlo de nuevo.
-  originalObjectKey String @map("original_object_key")
 
   /// URL pública servible; se mantiene apuntando a la variante `card` por
   /// compatibilidad con el contrato `imagenUrl` ya confirmado con la UI.

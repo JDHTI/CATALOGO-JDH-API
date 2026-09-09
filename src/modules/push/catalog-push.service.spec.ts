@@ -264,7 +264,6 @@ describe('CatalogPushService', () => {
             id: 30,
             productId: 1,
             objectKey: 'products/P01/SKU-1/abc',
-            originalObjectKey: 'originals/abc.jpg',
             url: 'https://cdn/card.webp',
             thumbUrl: 'https://cdn/thumb.webp',
             cardUrl: 'https://cdn/card.webp',

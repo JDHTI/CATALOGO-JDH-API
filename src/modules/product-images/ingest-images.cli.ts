@@ -13,9 +13,11 @@
  * cada archivo procesado.
  *
  * La referencia sale de la carpeta que contiene el archivo cuando esta sigue
- * `{consecutivo}-{referencia}-{nombre}`; si no, del nombre del archivo. El
- * recorrido es recursivo, así que las carpetas intermedias (p. ej. una por
- * marca) no molestan.
+ * `{consecutivo}-{referencia}-{nombre}` o `{referencia}-{consecutivo}` (con
+ * nombre opcional); si no, del nombre del archivo; y como último recurso la
+ * carpeta entera es la referencia y la posición la da el orden del archivo
+ * dentro de ella. El recorrido es recursivo, así que las carpetas intermedias
+ * (p. ej. una por marca) no molestan.
  */
 import { cpus } from 'node:os';
 import { basename, extname, join, relative, resolve } from 'node:path';
@@ -26,8 +28,10 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../../app.module';
 import {
+  compareDeliveryFilenames,
   parseImageFilename,
   parseProductFolderCandidates,
+  parseReferenceFolderCandidate,
 } from './filename-parser';
 import type { IngestOutcome, ResolvedSupplier } from './product-images.service';
 import { ProductImagesService } from './product-images.service';
@@ -48,6 +52,14 @@ interface DiscoveredFile {
   /** Carpeta que contiene el archivo; en el layout por carpeta trae la
    *  referencia (`{consecutivo}-{referencia}-{nombre}`). */
   parentFolder: string;
+  /** Ruta absoluta de esa carpeta, para agrupar hermanos. */
+  parentPath: string;
+  /**
+   * El archivo cuelga directo de la carpeta del proveedor. En ese caso la
+   * carpeta NO es una referencia (es el layout plano `399/SKU.png`) y no se
+   * puede deducir posición por orden.
+   */
+  atRoot: boolean;
   relativePath: string;
   absolutePath: string;
 }
@@ -118,6 +130,8 @@ async function walkSupplierFolder(
         results.push({
           supplierFolder,
           parentFolder: basename(current),
+          parentPath: current,
+          atRoot: current === rootDir,
           relativePath: relative(rootDir, full),
           absolutePath: full,
         });
@@ -157,6 +171,35 @@ async function discoverInputs(
   }
 
   return bySupplierFolder;
+}
+
+/**
+ * Posición de cada archivo dentro de su carpeta, en orden natural de nombre.
+ * Solo para archivos en subcarpetas: los que cuelgan directo de la carpeta del
+ * proveedor son el layout plano, donde la carpeta es el proveedor y no una
+ * referencia.
+ */
+function assignFolderOrder(files: DiscoveredFile[]): Map<string, number> {
+  const byFolder = new Map<string, DiscoveredFile[]>();
+  for (const file of files) {
+    if (file.atRoot) continue;
+    const group = byFolder.get(file.parentPath);
+    if (group) group.push(file);
+    else byFolder.set(file.parentPath, [file]);
+  }
+
+  const order = new Map<string, number>();
+  for (const group of byFolder.values()) {
+    [...group]
+      .sort((a, b) =>
+        compareDeliveryFilenames(
+          basename(a.absolutePath),
+          basename(b.absolutePath),
+        ),
+      )
+      .forEach((file, index) => order.set(file.absolutePath, index));
+  }
+  return order;
 }
 
 /** Ejecuta `worker` sobre `items` con un máximo de tareas en paralelo. */
@@ -280,9 +323,18 @@ async function processSupplierFolder(
     return;
   }
 
+  const folderOrder = assignFolderOrder(files);
+
   await runWithConcurrency(files, options.concurrencia, async (file) => {
     rows.push(
-      await processFile(service, supplier, file, options.dryRun, options.force),
+      await processFile(
+        service,
+        supplier,
+        file,
+        folderOrder.get(file.absolutePath),
+        options.dryRun,
+        options.force,
+      ),
     );
   });
 }
@@ -291,6 +343,7 @@ async function processFile(
   service: ProductImagesService,
   supplier: ResolvedSupplier,
   file: DiscoveredFile,
+  orderIndex: number | undefined,
   dryRun: boolean,
   force: boolean,
 ): Promise<ReportRow> {
@@ -303,11 +356,18 @@ async function processFile(
   try {
     const buffer = await readFile(file.absolutePath);
     const sourceFilename = basename(file.absolutePath);
-    // La carpeta del producto manda cuando sigue el layout
-    // `{consecutivo}-{referencia}-{nombre}`; si no, se lee el nombre del
-    // archivo (layout plano `SKU.png`).
+    // Cuando el archivo está en una subcarpeta, LA CARPETA es la referencia:
+    // primero se lee con consecutivo y, si no lo trae, la carpeta entera es la
+    // referencia y la posición la da el orden del archivo. El nombre del
+    // archivo queda de último y solo se usa en el layout plano, donde las
+    // imágenes cuelgan directo de la carpeta del proveedor — los proveedores
+    // nombran los archivos como quieren y no son fuente confiable de la
+    // referencia.
     const candidates = [
       ...parseProductFolderCandidates(file.parentFolder, sourceFilename),
+      ...(orderIndex === undefined
+        ? []
+        : parseReferenceFolderCandidate(file.parentFolder, orderIndex)),
       ...parseImageFilename(sourceFilename),
     ];
 
@@ -349,6 +409,41 @@ async function processFile(
   }
 }
 
+/**
+ * Avisa cuando dos archivos de la misma corrida caen en la misma ranura
+ * (proveedor + referencia + posición): el segundo pisa al primero.
+ *
+ * Pasa, por ejemplo, si una entrega trae `0212-01/` y `0212-02/` como carpetas
+ * distintas del MISMO producto — en el layout `{referencia}-{consecutivo}` las
+ * dos resuelven a la referencia `0212` y la segunda sobrescribe la galería de
+ * la primera. La ingesta no puede decidir cuál es la buena; solo lo reporta
+ * para que se revise la entrega antes de subir.
+ */
+function warnSlotCollisions(rows: ReportRow[], logger: Logger): void {
+  const bySlot = new Map<string, ReportRow[]>();
+  for (const row of rows) {
+    if (row.estado === 'error') continue;
+    const slot = `${row.proveedor}|${row.sku}|${row.posicion}`;
+    const group = bySlot.get(slot);
+    if (group) group.push(row);
+    else bySlot.set(slot, [row]);
+  }
+
+  const collisions = [...bySlot.values()].filter((group) => group.length > 1);
+  if (collisions.length === 0) return;
+
+  logger.warn(
+    `${collisions.length} referencia(s) con más de un archivo para la misma posición; el último gana:`,
+  );
+  for (const group of collisions) {
+    const { proveedor, sku, posicion } = group[0];
+    const archivos = group.map((row) => row.archivo).join(' | ');
+    logger.warn(
+      `  ${proveedor} · ref ${sku} · posición ${posicion} ← ${archivos}`,
+    );
+  }
+}
+
 function printSummary(
   rows: ReportRow[],
   reportPath: string,
@@ -361,6 +456,8 @@ function printSummary(
     `Total: ${rows.length} · ok: ${counts.ok} · omitidos: ${counts.omitido} · errores: ${counts.error}`,
   );
   logger.log(`Reporte: ${reportPath}`);
+
+  warnSlotCollisions(rows, logger);
 
   if (counts.error > 0) {
     logger.warn(`Hay ${counts.error} archivo(s) con error. Revisa el CSV.`);

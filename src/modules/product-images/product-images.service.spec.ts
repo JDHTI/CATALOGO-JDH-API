@@ -168,7 +168,7 @@ describe('ProductImagesService.ingestFile', () => {
       productIds: [100],
       objectKeyBase: expect.stringContaining('products/P010/ABC-1/') as unknown,
     });
-    expect(storage.put).toHaveBeenCalledTimes(4); // original + 3 variantes
+    expect(storage.put).toHaveBeenCalledTimes(3); // solo las 3 variantes
     expect(prisma.productImage.upsert).toHaveBeenCalledTimes(1);
     expect(cache.invalidateByPrefix).toHaveBeenCalledWith('http:');
   });
@@ -198,14 +198,38 @@ describe('ProductImagesService.ingestFile', () => {
         'products/P010/1001-fruco-tomate-4350-g/',
       ) as unknown,
     });
-    // El original también va bajo la carpeta `referencia-nombre`.
+    // Las tres variantes van bajo la carpeta `referencia-nombre`.
     expect(storage.put).toHaveBeenCalledWith(
       expect.stringMatching(
-        /^originals\/products\/P010\/1001-fruco-tomate-4350-g\/[0-9a-f]{8}\.png$/,
+        /^products\/P010\/1001-fruco-tomate-4350-g\/[0-9a-f]{8}\/(thumb|card|full)\.webp$/,
       ),
       expect.anything(),
       expect.anything(),
     );
+  });
+
+  it('no sube el archivo original: nada cuelga de `originals/`', async () => {
+    const { service, storage } = buildService({ products: [{ id: 102 }] });
+
+    await service.ingestFile({
+      supplier,
+      candidates: [
+        {
+          sku: '1001',
+          position: 0,
+          isPrimary: true,
+          objectFolder: '1001-fruco-tomate-4350-g',
+        },
+      ],
+      buffer: Buffer.from('imagen'),
+      sourceFilename: '1-1001-FRUCO TOMATE 4350 G.png',
+      dryRun: false,
+      force: false,
+    });
+
+    const keys = storage.put.mock.calls.map(([key]) => key as string);
+    expect(keys).toHaveLength(3);
+    expect(keys.some((key) => key.startsWith('originals/'))).toBe(false);
   });
 
   it('salta al segundo candidato si el primero no tiene producto', async () => {
