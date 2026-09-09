@@ -356,17 +356,19 @@ async function processFile(
   try {
     const buffer = await readFile(file.absolutePath);
     const sourceFilename = basename(file.absolutePath);
-    // De más específico a más general: la carpeta con consecutivo, el nombre
-    // del archivo (layout plano `SKU.png`) y, como último recurso, la carpeta
-    // entera como referencia con la posición dada por el orden del archivo.
-    // Ese último solo gana si ninguno de los anteriores resolvió un producto,
-    // así que las entregas que ya funcionaban no se renumeran.
+    // Cuando el archivo está en una subcarpeta, LA CARPETA es la referencia:
+    // primero se lee con consecutivo y, si no lo trae, la carpeta entera es la
+    // referencia y la posición la da el orden del archivo. El nombre del
+    // archivo queda de último y solo se usa en el layout plano, donde las
+    // imágenes cuelgan directo de la carpeta del proveedor — los proveedores
+    // nombran los archivos como quieren y no son fuente confiable de la
+    // referencia.
     const candidates = [
       ...parseProductFolderCandidates(file.parentFolder, sourceFilename),
-      ...parseImageFilename(sourceFilename),
       ...(orderIndex === undefined
         ? []
         : parseReferenceFolderCandidate(file.parentFolder, orderIndex)),
+      ...parseImageFilename(sourceFilename),
     ];
 
     if (candidates.length === 0) {

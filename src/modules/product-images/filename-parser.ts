@@ -256,10 +256,11 @@ export function compareDeliveryFilenames(a: string, b: string): number {
  * Candidato del layout más simple: la carpeta es la referencia y la posición
  * sale del orden del archivo dentro de ella.
  *
- * Es el ÚLTIMO recurso a propósito. Se prueba después de los layouts con
- * consecutivo y del nombre de archivo, así que solo gana cuando ninguno de
- * esos resolvió un producto: una entrega que ya funcionaba conserva sus
- * posiciones en vez de renumerarse por el orden del directorio.
+ * Se prueba justo después de los layouts con consecutivo y ANTES del nombre
+ * del archivo: si el archivo está en una subcarpeta, la referencia la manda la
+ * carpeta. Los proveedores nombran los archivos como quieren
+ * (`Hero_Image_30243107_ESP-06.png`), así que el nombre no es fuente confiable
+ * de referencia y solo se usa en el layout plano.
  */
 export function parseReferenceFolderCandidate(
   folderName: string,
