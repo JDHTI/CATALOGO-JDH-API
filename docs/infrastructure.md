@@ -36,8 +36,12 @@ publica desde ahí con `pnpm push:catalogo` (ver
 **La autenticación no vive en esta API.** La resuelve Better Auth dentro del
 Next.js del catálogo (`jdh-catalogo-ui`), con dos proveedores: Entra ID para el
 personal JDH y email + contraseña para las cuentas de cliente. Esta API no
-tiene guards, ni sesiones, ni endpoints privados todavía; todos sus endpoints
-son públicos.
+emite tokens ni gestiona sesiones: solo **verifica** el JWT EdDSA que firma la
+UI, con la clave pública de su JWKS.
+
+El catálogo (`/products`, `/suppliers`, `/brands`, `/health`) sigue siendo
+público. La única superficie autenticada es `/favorites`, y su guard es
+**opt-in por ruta**, no global — ver [favoritos.md](./favoritos.md).
 
 Lo único que aporta este repo es **dónde se guardan esas sesiones**: la base
 `jdh_auth`, en el mismo contenedor `postgres` de arriba. La crea
