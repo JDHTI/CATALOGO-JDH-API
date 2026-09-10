@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 
 import appConfig from './app.config';
+import authConfig from './auth.config';
 import databaseConfig from './database.config';
 import datawarehouseConfig from './datawarehouse.config';
 import pushConfig from './push.config';
@@ -24,6 +25,7 @@ import { validateEnv } from './env.validation';
       envFilePath: ['.env.local', '.env'],
       load: [
         appConfig,
+        authConfig,
         databaseConfig,
         datawarehouseConfig,
         pushConfig,

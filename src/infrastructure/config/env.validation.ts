@@ -51,6 +51,28 @@ export class EnvironmentVariables {
   @IsOptional()
   API_VERSION: string = 'v1';
 
+  // -------------------------------------------------------------------- auth
+  // Opcional: sin `AUTH_JWKS_URL` la API arranca igual y sirve todo el
+  // catálogo público; solo los endpoints privados (favoritos) responden 503.
+  // Así el despliegue del catálogo no queda atado al de la UI.
+
+  /**
+   * JWKS público de la UI, del MISMO entorno
+   * (p. ej. `http://localhost:3001/api/auth/jwks`).
+   * NO se deriva de `AUTH_JWT_ISSUER`: el issuer es un identificador lógico.
+   */
+  @IsUrl({ require_tld: false })
+  @IsOptional()
+  AUTH_JWKS_URL?: string;
+
+  @IsString()
+  @IsOptional()
+  AUTH_JWT_ISSUER: string = 'jdh-catalogo-ui';
+
+  @IsString()
+  @IsOptional()
+  AUTH_JWT_AUDIENCE: string = 'jdh-catalogo-api';
+
   // ------------------------------------------------------------------ database
   @IsString()
   @IsNotEmpty()
