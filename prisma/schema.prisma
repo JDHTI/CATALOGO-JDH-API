@@ -165,6 +165,7 @@ model Product {
   category     Category?      @relation(fields: [categoryId], references: [id])
   subcategory  Subcategory?   @relation(fields: [subcategoryId], references: [id])
   images       ProductImage[]
+  favorites    Favorite[]
 
   @@index([supplierId])
   @@index([brandId])
@@ -211,6 +212,37 @@ model ProductImage {
   @@unique([productId, position])
   @@index([productId])
   @@map("product_images")
+}
+
+// =============================================================================
+// FAVORITOS
+//
+// Primera superficie autenticada del catálogo (ver docs/favoritos.md).
+// =============================================================================
+
+/// Producto marcado como favorito por un usuario de la UI.
+model Favorite {
+  id String @id @default(cuid())
+
+  /// Claim `sub` del JWT que emite la UI. Es un STRING OPACO: el catálogo no
+  /// tiene acceso a la base `jdh_auth` y no puede (ni debe) resolverlo a una
+  /// cuenta. No hay FK ni tabla de usuarios en esta base.
+  userId String @map("user_id")
+
+  productId Int      @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  /// `Cascade`: si un producto desaparece de la base, sus favoritos se van con
+  /// él. El sync del DWH NO borra productos (los desactiva), así que en la
+  /// práctica esto solo aplica a limpiezas manuales.
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Hace idempotente el alta sin leer antes: repetir un PUT es un upsert que
+  /// no falla.
+  @@unique([userId, productId])
+  /// Sirve el orden de la lista (`createdAt desc` dentro de un usuario).
+  @@index([userId, createdAt])
+  @@map("favorites")
 }
 
 /// Registro de cada ejecución de sincronización, para observabilidad.

@@ -42,6 +42,9 @@ async function bootstrap(): Promise<void> {
         .setTitle('JDH Catálogo API')
         .setDescription('API del catálogo de productos JDH')
         .setVersion(config.apiVersion)
+        // El catálogo es público; solo /favorites pide token (ver
+        // docs/favoritos.md).
+        .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
         .build(),
     );
     SwaggerModule.setup(`${config.apiPrefix}/docs`, app, document);

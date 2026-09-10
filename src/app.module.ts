@@ -4,6 +4,7 @@ import { RequestIdMiddleware } from '@common/middlewares/request-id.middleware';
 import { RateLimitModule } from '@common/ratelimit';
 import { InfrastructureModule } from '@infrastructure/infrastructure.module';
 import { BrandsModule } from '@modules/brands/brands.module';
+import { FavoritesModule } from '@modules/favorites/favorites.module';
 import { HealthModule } from '@modules/health/health.module';
 import { LogosModule } from '@modules/logos/logos.module';
 import { ProductImagesModule } from '@modules/product-images/product-images.module';
@@ -21,6 +22,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     SuppliersModule,
     BrandsModule,
     ProductsModule,
+    FavoritesModule,
     SyncModule,
     LogosModule,
     ProductImagesModule,
