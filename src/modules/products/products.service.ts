@@ -4,14 +4,9 @@ import type { PaginatedResult } from '@common/index';
 
 import type { FeaturedProductsQueryDto } from './dto/featured-products-query.dto';
 import type { ListProductsQueryDto } from './dto/list-products-query.dto';
-import {
-  ProductImageDto,
-  ProductResponseDto,
-} from './dto/product-response.dto';
-import {
-  ProductsRepository,
-  type ProductWithRelations,
-} from './products.repository';
+import { ProductResponseDto } from './dto/product-response.dto';
+import { toProductResponse } from './product.mapper';
+import { ProductsRepository } from './products.repository';
 
 /** Duración de la ventana de rotación de destacados. */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -27,7 +22,7 @@ export class ProductsService {
     const { items, total } = await this.products.findActivePage(query);
 
     return {
-      data: items.map((product) => this.toResponse(product)),
+      data: items.map(toProductResponse),
       meta: {
         page: query.page,
         limit: query.limit,
@@ -56,7 +51,7 @@ export class ProductsService {
     const items = await this.products.findFeatured(query.limit, seed);
 
     return {
-      data: items.map((product) => this.toResponse(product)),
+      data: items.map(toProductResponse),
       meta: {
         page: 1,
         limit: query.limit,
@@ -72,45 +67,6 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException(`Producto ${id} no encontrado`);
     }
-    return this.toResponse(product);
-  }
-
-  /** Mapea al contrato confirmado con la UI (respetar el shape tal cual). */
-  private toResponse(product: ProductWithRelations): ProductResponseDto {
-    return {
-      id: product.id,
-      sku: product.sku,
-      nombre: product.name,
-      descripcion: product.shortDescription,
-      descripcionLarga: product.longDescription,
-      seo: {
-        title: product.seoTitle,
-        description: product.seoDescription,
-      },
-      marca: product.brand?.name ?? null,
-      fabricante: product.manufacturer?.name ?? null,
-      proveedor: { id: product.supplier.id, nombre: product.supplier.name },
-      categoria: product.category
-        ? { id: product.category.id, nombre: product.category.name }
-        : null,
-      subcategoria: product.subcategory
-        ? { id: product.subcategory.id, nombre: product.subcategory.name }
-        : null,
-      imagenUrl: product.images[0]?.cardUrl ?? product.images[0]?.url ?? null,
-      imagenes: product.images.map((image) => this.toImageResponse(image)),
-    };
-  }
-
-  private toImageResponse(
-    image: ProductWithRelations['images'][number],
-  ): ProductImageDto {
-    return {
-      thumbUrl: image.thumbUrl,
-      cardUrl: image.cardUrl,
-      fullUrl: image.fullUrl,
-      alt: image.alt,
-      position: image.position,
-      esPrincipal: image.isPrimary,
-    };
+    return toProductResponse(product);
   }
 }

@@ -118,6 +118,12 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: '6379'
       S3_ENDPOINT: http://minio:9000
+    # El JWKS de la UI lo sirve un proceso del HOST, no un servicio de compose:
+    # `AUTH_JWKS_URL` del `.env` debe apuntar a `host.docker.internal`, no a
+    # `localhost` (que aquí dentro es el propio contenedor). Docker Desktop ya
+    # resuelve ese nombre; esta línea lo hace funcionar también en Linux.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
       # El puerto del contenedor es el mismo PORT que trae `.env` (8080 por
       # convención de este repo), no un 3000 fijo.

@@ -1,3 +1,4 @@
+export * from './auth';
 export * from './constants/app.constants';
 export * from './decorators/cache.decorators';
 export * from './dto/pagination-query.dto';
