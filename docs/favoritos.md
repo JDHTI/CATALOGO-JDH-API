@@ -163,10 +163,16 @@ escritura con un argumento ininteligible.
 ```bash
 # Origen de la UI del MISMO entorno + /api/auth/jwks
 # (3111 es el puerto de pruebas locales de jdh-catalogo-ui)
-AUTH_JWKS_URL=http://localhost:3111/api/auth/jwks
+AUTH_JWKS_URL=http://host.docker.internal:3111/api/auth/jwks
 AUTH_JWT_ISSUER=jdh-catalogo-ui     # por defecto
 AUTH_JWT_AUDIENCE=jdh-catalogo-api  # por defecto
 ```
+
+`host.docker.internal` y no `localhost`: la UI corre en el host, y dentro del
+contenedor `api` `localhost` es el propio contenedor. Docker Desktop resuelve
+ese nombre también desde el host, así que el mismo valor sirve tanto para
+`pnpm start:dev` como para `pnpm docker:up` (para Linux, `compose.yaml` añade
+el `extra_hosts` correspondiente).
 
 `jose` v6 es ESM-only y se carga desde código CommonJS con `require(esm)`, que
 Node soporta de serie desde **22.12**. La imagen de producción es
