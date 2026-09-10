@@ -27,7 +27,12 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
   };
 }>;
 
-const PUBLIC_INCLUDE = {
+/**
+ * Relaciones que necesita el contrato público del producto. Exportado porque
+ * `/favorites` devuelve el mismo `Producto` completo (con `imagenes`) y debe
+ * traerlas en la misma consulta; si no, la página de favoritos haría N+1.
+ */
+export const PUBLIC_PRODUCT_INCLUDE = {
   supplier: { select: { id: true, name: true } },
   brand: { select: { name: true } },
   manufacturer: { select: { name: true } },
@@ -89,7 +94,7 @@ export class ProductsRepository {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.product.findMany({
         where,
-        include: PUBLIC_INCLUDE,
+        include: PUBLIC_PRODUCT_INCLUDE,
         orderBy: ORDER_BY_NAME,
         skip: query.skip,
         take: query.limit,
@@ -152,7 +157,7 @@ export class ProductsRepository {
       items.push(
         ...(await this.prisma.product.findMany({
           where: withImage,
-          include: PUBLIC_INCLUDE,
+          include: PUBLIC_PRODUCT_INCLUDE,
           orderBy: ORDER_BY_NAME,
           skip,
           take,
@@ -168,7 +173,7 @@ export class ProductsRepository {
       items.push(
         ...(await this.prisma.product.findMany({
           where: withoutImage,
-          include: PUBLIC_INCLUDE,
+          include: PUBLIC_PRODUCT_INCLUDE,
           orderBy: ORDER_BY_NAME,
           skip: Math.max(0, skip - withImageTotal),
           take: take - items.length,
@@ -183,7 +188,7 @@ export class ProductsRepository {
   findActiveById(id: number): Promise<ProductWithRelations | null> {
     return this.prisma.product.findFirst({
       where: { id, active: true },
-      include: PUBLIC_INCLUDE,
+      include: PUBLIC_PRODUCT_INCLUDE,
     });
   }
 
@@ -269,7 +274,7 @@ export class ProductsRepository {
     };
     const query = {
       where,
-      include: PUBLIC_INCLUDE,
+      include: PUBLIC_PRODUCT_INCLUDE,
       orderBy: ORDER_BY_NAME,
     };
 
