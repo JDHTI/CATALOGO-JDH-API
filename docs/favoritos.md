@@ -180,17 +180,26 @@ el `extra_hosts` correspondiente).
 tiene valores por defecto correctos y no hay variables nuevas de base de datos
 (la tabla la crea `prisma migrate deploy`, que ya corre el `entrypoint.sh`).
 
-En producción el origen es el dominio propio de la UI, no un host de Railway
-(el de Railway es el de esta API):
+El origen es el de la UI, que está en Vercel — **no** un host de Railway (el
+de Railway es el de esta API):
 
 ```bash
-AUTH_JWKS_URL=https://catalogo.jdh.com.co/api/auth/jwks
+AUTH_JWKS_URL=https://catalogo-jdh.vercel.app/api/auth/jwks
 ```
+
+Comprobado el 2026-09-10: responde 200 con una clave `EdDSA` / `Ed25519`.
+
+> El `.env.example` y el `docs/despliegue.md` de `jdh-catalogo-ui` citan
+> `https://catalogo.jdh.com.co` como origen de producción, pero ese dominio
+> **todavía no resuelve en DNS**: es el destino previsto, no el actual. Cuando
+> se active, basta con cambiar esta variable y reiniciar — el `iss` sigue
+> siendo `jdh-catalogo-ui`, que es un identificador lógico y no cambia con el
+> dominio.
 
 Tres cosas:
 
-- **Sin barra final en el origen.** Con `https://catalogo.jdh.com.co/` se
-  acabaría pidiendo `//api/auth/jwks`.
+- **Sin barra final en el origen.** Con `https://…vercel.app/` se acabaría
+  pidiendo `//api/auth/jwks`.
 - **Una por entorno, apuntando a la UI de ese mismo entorno.** Cada entorno de
   la UI firma con su propia clave, así que un token de preview no debe validar
   contra producción. Si se cruzan, la firma cuadra pero `iss`/`aud` no: el
