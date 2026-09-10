@@ -174,6 +174,31 @@ ese nombre también desde el host, así que el mismo valor sirve tanto para
 `pnpm start:dev` como para `pnpm docker:up` (para Linux, `compose.yaml` añade
 el `extra_hosts` correspondiente).
 
+### En la instancia desplegada (Railway)
+
+`AUTH_JWKS_URL` es la **única** variable que hay que declarar allá; el resto
+tiene valores por defecto correctos y no hay variables nuevas de base de datos
+(la tabla la crea `prisma migrate deploy`, que ya corre el `entrypoint.sh`).
+
+En producción el origen es el dominio propio de la UI, no un host de Railway
+(el de Railway es el de esta API):
+
+```bash
+AUTH_JWKS_URL=https://catalogo.jdh.com.co/api/auth/jwks
+```
+
+Tres cosas:
+
+- **Sin barra final en el origen.** Con `https://catalogo.jdh.com.co/` se
+  acabaría pidiendo `//api/auth/jwks`.
+- **Una por entorno, apuntando a la UI de ese mismo entorno.** Cada entorno de
+  la UI firma con su propia clave, así que un token de preview no debe validar
+  contra producción. Si se cruzan, la firma cuadra pero `iss`/`aud` no: el
+  síntoma es 401 solo en favoritos, con el resto del catálogo en 200.
+- **No es un bloqueante de despliegue.** Sin la variable la API arranca y
+  sirve todo el catálogo; solo `/favorites` responde 503. Se puede desplegar
+  esta API antes que la UI y encender favoritos después.
+
 `jose` v6 es ESM-only y se carga desde código CommonJS con `require(esm)`, que
 Node soporta de serie desde **22.12**. La imagen de producción es
 `node:22-alpine`; si alguna vez se fija a un 22 anterior, esto deja de
