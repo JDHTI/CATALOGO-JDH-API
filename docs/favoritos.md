@@ -1,8 +1,8 @@
 # Favoritos por usuario
 
-Primera superficie **autenticada** del catálogo. Todo lo demás
-(`/products`, `/suppliers`, `/brands`, `/health`) sigue siendo público y sin
-sesión.
+`/favorites` es una superficie **autenticada** del catálogo. Todo lo público
+(`/products`, `/suppliers`, `/brands`, `/health`) sigue siendo sin sesión;
+`/order-lists` es la otra superficie privada del API.
 
 ## El guard JWT
 
@@ -50,7 +50,8 @@ globalmente lo rompería.
 ### Es opcional al arrancar
 
 Sin `AUTH_JWKS_URL` la API arranca igual, sirve todo el catálogo público y
-solo `/favorites` responde **503** con un mensaje explícito. Mismo criterio
+solo las superficies privadas (`/favorites` y `/order-lists`) responden **503**
+con un mensaje explícito. Mismo criterio
 que el DWH: el catálogo debe poder servir aunque su dependencia opcional no
 esté configurada, y el despliegue del API no queda atado al de la UI.
 
@@ -205,7 +206,7 @@ Tres cosas:
   contra producción. Si se cruzan, la firma cuadra pero `iss`/`aud` no: el
   síntoma es 401 solo en favoritos, con el resto del catálogo en 200.
 - **No es un bloqueante de despliegue.** Sin la variable la API arranca y
-  sirve todo el catálogo; solo `/favorites` responde 503. Se puede desplegar
+  sirve todo el catálogo; solo las superficies privadas responden 503. Se puede desplegar
   esta API antes que la UI y encender favoritos después.
 
 `jose` v6 es ESM-only y se carga desde código CommonJS con `require(esm)`, que

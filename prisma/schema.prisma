@@ -166,6 +166,7 @@ model Product {
   subcategory  Subcategory?   @relation(fields: [subcategoryId], references: [id])
   images       ProductImage[]
   favorites    Favorite[]
+  orderListItems OrderListItem[]
 
   @@index([supplierId])
   @@index([brandId])
@@ -243,6 +244,44 @@ model Favorite {
   /// Sirve el orden de la lista (`createdAt desc` dentro de un usuario).
   @@index([userId, createdAt])
   @@map("favorites")
+}
+
+// =============================================================================
+// LISTAS DE PEDIDO
+//
+// Borradores privados de cada usuario autenticado. El usuario es el `sub` del
+// JWT y se conserva como string opaco, igual que en favoritos.
+// =============================================================================
+
+/// Lista de pedido/cotización de un usuario.
+model OrderList {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items OrderListItem[]
+
+  @@index([userId, updatedAt])
+  @@map("order_lists")
+}
+
+/// Producto y cantidad dentro de una lista. La clave compuesta hace idempotente
+/// el PUT que agrega o actualiza una línea.
+model OrderListItem {
+  orderListId String   @map("order_list_id")
+  productId   Int      @map("product_id")
+  quantity    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  orderList OrderList @relation(fields: [orderListId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([orderListId, productId])
+  @@index([productId])
+  @@map("order_list_items")
 }
 
 /// Registro de cada ejecución de sincronización, para observabilidad.

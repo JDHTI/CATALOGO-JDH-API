@@ -109,24 +109,45 @@ export class ProductsRepository {
   private static buildWhere(
     query: ListProductsQueryDto,
   ): Prisma.ProductWhereInput {
+    const search = query.search?.trim();
+    const searchWhere = search
+      ? ProductsRepository.buildSearchWhere(search, query.searchMode)
+      : undefined;
+
     return {
       active: true,
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
       ...(query.brandId ? { brandId: query.brandId } : {}),
-      ...(query.search
-        ? {
-            OR: [
-              { name: { contains: query.search, mode: 'insensitive' } },
-              { sku: { contains: query.search, mode: 'insensitive' } },
-              {
-                brand: {
-                  is: { name: { contains: query.search, mode: 'insensitive' } },
-                },
-              },
-            ],
-          }
-        : {}),
+      ...(searchWhere ? { OR: searchWhere } : {}),
     };
+  }
+
+  /** Traduce el modo de búsqueda al filtro Prisma sin alterar el modo legacy. */
+  private static buildSearchWhere(
+    search: string,
+    mode: ListProductsQueryDto['searchMode'],
+  ): Prisma.ProductWhereInput[] {
+    const name = { name: { contains: search, mode: 'insensitive' as const } };
+    const skuContains = {
+      sku: { contains: search, mode: 'insensitive' as const },
+    };
+    const skuExact = { sku: { equals: search, mode: 'insensitive' as const } };
+    const brand = {
+      brand: {
+        is: { name: { contains: search, mode: 'insensitive' as const } },
+      },
+    };
+
+    switch (mode) {
+      case 'name':
+        return [name];
+      case 'skuExact':
+        return [skuExact];
+      case 'nameOrSkuExact':
+        return [name, skuExact];
+      default:
+        return [name, skuContains, brand];
+    }
   }
 
   /**

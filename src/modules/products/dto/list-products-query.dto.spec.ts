@@ -14,6 +14,7 @@ describe('ListProductsQueryDto', () => {
     expect(dto.limit).toBe(PAGINATION.DEFAULT_LIMIT);
     expect(dto.skip).toBe(0);
     expect(dto.search).toBeUndefined();
+    expect(dto.searchMode).toBeUndefined();
     expect(dto.supplierId).toBeUndefined();
     expect(dto.brandId).toBeUndefined();
   });
@@ -35,6 +36,23 @@ describe('ListProductsQueryDto', () => {
   it('rechaza un limit por encima del máximo permitido', () => {
     const dto = plainToInstance(ListProductsQueryDto, {
       limit: String(PAGINATION.MAX_LIMIT + 1),
+    });
+
+    expect(validateSync(dto).length).toBeGreaterThan(0);
+  });
+
+  it('acepta los modos de búsqueda del editor de listas', () => {
+    for (const searchMode of ['name', 'skuExact', 'nameOrSkuExact']) {
+      const dto = plainToInstance(ListProductsQueryDto, { searchMode });
+
+      expect(validateSync(dto)).toHaveLength(0);
+      expect(dto.searchMode).toBe(searchMode);
+    }
+  });
+
+  it('rechaza un modo de búsqueda desconocido', () => {
+    const dto = plainToInstance(ListProductsQueryDto, {
+      searchMode: 'containsEverything',
     });
 
     expect(validateSync(dto).length).toBeGreaterThan(0);

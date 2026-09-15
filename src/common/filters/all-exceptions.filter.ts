@@ -12,6 +12,7 @@ export interface ErrorResponseBody {
   statusCode: number;
   message: string | string[];
   error: string;
+  code?: string;
   path: string;
   timestamp: string;
 }
@@ -38,6 +39,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : isHttp
           ? exception.message
           : 'Error interno del servidor';
+    const code =
+      typeof payload === 'object' &&
+      payload !== null &&
+      'code' in payload &&
+      typeof (payload as { code?: unknown }).code === 'string'
+        ? (payload as { code: string }).code
+        : undefined;
 
     if (status >= 500) {
       this.logger.error(
@@ -50,6 +58,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       message,
       error: isHttp ? exception.name : 'InternalServerError',
+      ...(code ? { code } : {}),
       path: request.url,
       timestamp: new Date().toISOString(),
     };

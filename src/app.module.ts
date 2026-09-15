@@ -7,6 +7,7 @@ import { BrandsModule } from '@modules/brands/brands.module';
 import { FavoritesModule } from '@modules/favorites/favorites.module';
 import { HealthModule } from '@modules/health/health.module';
 import { LogosModule } from '@modules/logos/logos.module';
+import { OrderListsModule } from '@modules/order-lists/order-lists.module';
 import { ProductImagesModule } from '@modules/product-images/product-images.module';
 import { ProductContentModule } from '@modules/product-content/product-content.module';
 import { ProductsModule } from '@modules/products/products.module';
@@ -23,6 +24,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     BrandsModule,
     ProductsModule,
     FavoritesModule,
+    OrderListsModule,
     SyncModule,
     LogosModule,
     ProductImagesModule,

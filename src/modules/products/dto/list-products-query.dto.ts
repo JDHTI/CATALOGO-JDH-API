@@ -15,6 +15,14 @@ import { PaginationQueryDto } from '@common/index';
 export const PRODUCT_ORDER_BY = ['nombre', 'conImagen'] as const;
 export type ProductOrderBy = (typeof PRODUCT_ORDER_BY)[number];
 
+/** Modos explícitos del buscador usado por el editor de listas. */
+export const PRODUCT_SEARCH_MODES = [
+  'name',
+  'skuExact',
+  'nameOrSkuExact',
+] as const;
+export type ProductSearchMode = (typeof PRODUCT_SEARCH_MODES)[number];
+
 /** Filtros del listado público de productos. */
 export class ListProductsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
@@ -23,6 +31,17 @@ export class ListProductsQueryDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @ApiPropertyOptional({
+    enum: PRODUCT_SEARCH_MODES,
+    description:
+      'Modo de búsqueda. Si se omite, busca como antes sobre nombre, SKU y ' +
+      'marca. `name` busca por nombre parcial, `skuExact` por SKU exacto y ' +
+      '`nameOrSkuExact` combina nombre parcial con SKU exacto.',
+  })
+  @IsIn(PRODUCT_SEARCH_MODES)
+  @IsOptional()
+  searchMode?: ProductSearchMode;
 
   @ApiPropertyOptional({ description: 'Filtrar por proveedor' })
   @Type(() => Number)

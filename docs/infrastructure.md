@@ -40,8 +40,9 @@ emite tokens ni gestiona sesiones: solo **verifica** el JWT EdDSA que firma la
 UI, con la clave pública de su JWKS.
 
 El catálogo (`/products`, `/suppliers`, `/brands`, `/health`) sigue siendo
-público. La única superficie autenticada es `/favorites`, y su guard es
-**opt-in por ruta**, no global — ver [favoritos.md](./favoritos.md).
+público. Las superficies autenticadas son `/favorites` y `/order-lists`, y sus
+guards son **opt-in por ruta**, no global — ver [favoritos.md](./favoritos.md)
+y [order-lists.md](./order-lists.md).
 
 Lo único que aporta este repo es **dónde se guardan esas sesiones**: la base
 `jdh_auth`, en el mismo contenedor `postgres` de arriba. La crea
