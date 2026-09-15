@@ -42,8 +42,8 @@ async function bootstrap(): Promise<void> {
         .setTitle('JDH Catálogo API')
         .setDescription('API del catálogo de productos JDH')
         .setVersion(config.apiVersion)
-        // El catálogo es público; solo /favorites pide token (ver
-        // docs/favoritos.md).
+        // El catálogo es público; solo las superficies privadas piden token
+        // (ver docs/favoritos.md y docs/order-lists.md).
         .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
         .build(),
     );

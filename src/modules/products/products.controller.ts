@@ -37,8 +37,10 @@ export class ProductsController {
     summary: 'Listado paginado de productos activos',
     description:
       'Solo productos activos, ordenados por nombre. `search` busca ' +
-      'case-insensitive sobre nombre, sku y marca. Con ' +
-      '`orderBy=conImagen` los productos con imagen primaria van primero.',
+      'case-insensitive sobre nombre, sku y marca cuando no se indica ' +
+      '`searchMode`. Los modos `name`, `skuExact` y `nameOrSkuExact` permiten ' +
+      'acotar la búsqueda. Con `orderBy=conImagen` los productos con imagen ' +
+      'primaria van primero.',
   })
   @ApiOkResponse({ description: 'Página de productos: { data, meta }' })
   findAll(
