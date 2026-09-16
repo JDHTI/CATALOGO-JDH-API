@@ -6,6 +6,7 @@ import {
   type ProductWithRelations,
 } from '@modules/products/products.repository';
 import type { Prisma } from '@prisma-client';
+import { ORDER_LIST_MAX_LISTS } from './order-lists.constants';
 
 const ORDER_LIST_COUNT_INCLUDE = {
   _count: { select: { items: true } },
@@ -38,6 +39,10 @@ export type ProductState = Pick<ProductWithRelations, 'id' | 'active'>;
 /** Acceso a datos de las listas privadas del usuario autenticado. */
 @Injectable()
 export class OrderListsRepository {
+  private readonly pendingCreates = new Map<
+    string,
+    Promise<OrderListWithCount | null>
+  >();
   constructor(private readonly prisma: PrismaService) {}
 
   findAll(userId: string): Promise<OrderListWithCount[]> {
@@ -59,10 +64,39 @@ export class OrderListsRepository {
     return this.prisma.orderList.count({ where: { userId } });
   }
 
-  create(userId: string, name: string): Promise<OrderListWithCount> {
-    return this.prisma.orderList.create({
-      data: { userId, name },
-      include: ORDER_LIST_COUNT_INCLUDE,
+  async create(
+    userId: string,
+    name: string,
+  ): Promise<OrderListWithCount | null> {
+    // Esperar fuera del pool: una ráfaga del mismo usuario no debe reservar
+    // todas las conexiones mientras espera su advisory lock en PostgreSQL.
+    const previous = this.pendingCreates.get(userId) ?? Promise.resolve();
+    const pending = previous
+      .catch(() => undefined)
+      .then(() => this.createWithinLimit(userId, name));
+    this.pendingCreates.set(userId, pending);
+    try {
+      return await pending;
+    } finally {
+      if (this.pendingCreates.get(userId) === pending)
+        this.pendingCreates.delete(userId);
+    }
+  }
+
+  private createWithinLimit(
+    userId: string,
+    name: string,
+  ): Promise<OrderListWithCount | null> {
+    return this.prisma.$transaction(async (transaction) => {
+      // El límite debe comprobarse bajo el mismo bloqueo que el INSERT.
+      // El bloqueo por usuario funciona también entre réplicas de la API.
+      await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`order-lists:${userId}`}, 0))`;
+      const total = await transaction.orderList.count({ where: { userId } });
+      if (total >= ORDER_LIST_MAX_LISTS) return null;
+      return transaction.orderList.create({
+        data: { userId, name },
+        include: ORDER_LIST_COUNT_INCLUDE,
+      });
     });
   }
 
@@ -72,7 +106,7 @@ export class OrderListsRepository {
     name: string,
   ): Promise<OrderListWithCount> {
     return this.prisma.orderList.update({
-      where: { id },
+      where: { id, userId },
       data: { name },
       include: ORDER_LIST_COUNT_INCLUDE,
     });
@@ -96,7 +130,7 @@ export class OrderListsRepository {
       orderList: { userId },
     };
 
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total] = await Promise.all([
       this.prisma.orderListItem.findMany({
         where,
         include: ORDER_LIST_ITEM_INCLUDE,
@@ -138,13 +172,12 @@ export class OrderListsRepository {
     quantity: number,
   ): Promise<OrderListItemWithProduct> {
     return this.prisma.$transaction(async (transaction) => {
-      const item = await transaction.orderListItem.upsert({
+      await transaction.orderListItem.upsert({
         where: {
           orderListId_productId: { orderListId: listId, productId },
         },
         create: { orderListId: listId, productId, quantity },
         update: { quantity },
-        include: ORDER_LIST_ITEM_INCLUDE,
       });
 
       // Las líneas son parte del borrador: su modificación también mueve la
@@ -154,7 +187,10 @@ export class OrderListsRepository {
         data: { updatedAt: new Date() },
       });
 
-      return item;
+      return transaction.orderListItem.findUniqueOrThrow({
+        where: { orderListId_productId: { orderListId: listId, productId } },
+        include: ORDER_LIST_ITEM_INCLUDE,
+      });
     });
   }
 

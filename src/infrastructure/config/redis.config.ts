@@ -7,6 +7,8 @@ export interface RedisConfig {
   db: number;
   keyPrefix: string;
   defaultTtl: number;
+  connectTimeout: number;
+  commandTimeout: number;
 }
 
 export const REDIS_CONFIG = 'redis';
@@ -17,5 +19,7 @@ export default registerAs<RedisConfig>(REDIS_CONFIG, () => ({
   password: process.env.REDIS_PASSWORD || undefined,
   db: Number(process.env.REDIS_DB ?? 0),
   keyPrefix: process.env.REDIS_KEY_PREFIX ?? 'jdh:catalogo:',
-  defaultTtl: Number(process.env.REDIS_DEFAULT_TTL ?? 300),
+  defaultTtl: Number(process.env.REDIS_DEFAULT_TTL || 300),
+  connectTimeout: Number(process.env.REDIS_CONNECT_TIMEOUT || 1000),
+  commandTimeout: Number(process.env.REDIS_COMMAND_TIMEOUT || 500),
 }));

@@ -7,6 +7,8 @@ export interface AppConfig {
   apiPrefix: string;
   apiVersion: string;
   isProduction: boolean;
+  trustProxy: string[] | false;
+  maxInflightRequests: number;
 }
 
 export const APP_CONFIG = 'app';
@@ -20,5 +22,9 @@ export default registerAs<AppConfig>(APP_CONFIG, () => {
     apiPrefix: process.env.API_PREFIX ?? 'api',
     apiVersion: process.env.API_VERSION ?? 'v1',
     isProduction: env === Environment.Production,
+    trustProxy: process.env.TRUST_PROXY?.trim()
+      ? process.env.TRUST_PROXY.split(',').map((entry) => entry.trim())
+      : false,
+    maxInflightRequests: Number(process.env.HTTP_MAX_INFLIGHT || 500),
   };
 });

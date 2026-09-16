@@ -27,7 +27,18 @@ export class PrismaService
 
     super({
       // Prisma 7 se conecta mediante driver adapter.
-      adapter: new PrismaPg({ connectionString: database.url }),
+      adapter: new PrismaPg({
+        connectionString: database.url,
+        max: database.poolMax,
+        connectionTimeoutMillis: database.connectionTimeoutMillis,
+        idleTimeoutMillis: database.idleTimeoutMillis,
+        statement_timeout: database.statementTimeoutMillis,
+        application_name: 'jdh-catalogo-api',
+      }),
+      transactionOptions: {
+        maxWait: database.connectionTimeoutMillis,
+        timeout: 10000,
+      },
       log: database.logQueries
         ? ['query', 'info', 'warn', 'error']
         : ['warn', 'error'],

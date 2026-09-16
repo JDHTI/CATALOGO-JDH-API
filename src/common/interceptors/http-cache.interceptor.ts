@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { from, of, switchMap, tap, type Observable } from 'rxjs';
+import { defer, firstValueFrom, type Observable } from 'rxjs';
 
 import { CacheService } from '@infrastructure/cache';
 
@@ -51,18 +51,8 @@ export class HttpCacheInterceptor implements NestInterceptor {
     );
     const key = HttpCacheInterceptor.buildKey(request);
 
-    return from(this.cache.get<unknown>(key)).pipe(
-      switchMap((cached) => {
-        if (cached !== null) return of(cached);
-
-        return next.handle().pipe(
-          tap((body) => {
-            // No cacheamos cuerpos vacíos: null es indistinguible de un miss.
-            if (body === undefined || body === null) return;
-            void this.cache.set(key, body, ttl);
-          }),
-        );
-      }),
+    return defer(() =>
+      this.cache.wrap(key, () => firstValueFrom(next.handle()), ttl),
     );
   }
 

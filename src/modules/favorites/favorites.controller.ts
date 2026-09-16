@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   ParseIntPipe,
   Put,
@@ -56,6 +57,7 @@ export class FavoritesController {
   constructor(private readonly favorites: FavoritesService) {}
 
   @Get()
+  @Header('Cache-Control', 'private, no-store')
   @ApiOperation({
     summary: 'Listado paginado de los favoritos del usuario',
     description:
@@ -74,6 +76,7 @@ export class FavoritesController {
   }
 
   @Get('ids')
+  @Header('Cache-Control', 'private, no-store')
   @ApiOperation({
     summary: 'Ids de los favoritos del usuario, y el total',
     description:

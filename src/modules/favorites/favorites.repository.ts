@@ -41,7 +41,7 @@ export class FavoritesRepository {
   ): Promise<{ items: ProductWithRelations[]; total: number }> {
     const where = FavoritesRepository.activeFavoritesOf(userId);
 
-    const [rows, total] = await this.prisma.$transaction([
+    const [rows, total] = await Promise.all([
       this.prisma.favorite.findMany({
         where,
         select: { product: { include: PUBLIC_PRODUCT_INCLUDE } },
@@ -65,7 +65,7 @@ export class FavoritesRepository {
   ): Promise<{ ids: number[]; total: number }> {
     const where = FavoritesRepository.activeFavoritesOf(userId);
 
-    const [rows, total] = await this.prisma.$transaction([
+    const [rows, total] = await Promise.all([
       this.prisma.favorite.findMany({
         where,
         select: { productId: true },

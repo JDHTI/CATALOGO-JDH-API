@@ -8,6 +8,18 @@ import type {
 import { RateLimitGuard } from './rate-limit.guard';
 
 describe('RateLimitGuard', () => {
+  it('no usa Redis ni cuota para las sondas marcadas por el servidor', async () => {
+    const handler = () => undefined;
+    Reflect.defineMetadata('health:probe', true, handler);
+    const consume = jest.fn();
+    const guard = new RateLimitGuard({ consume });
+    const context = {
+      getType: () => 'http',
+      getHandler: () => handler,
+    } as unknown as ExecutionContext;
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(consume).not.toHaveBeenCalled();
+  });
   const buildContext = (): {
     context: ExecutionContext;
     setHeader: jest.Mock;
@@ -15,6 +27,7 @@ describe('RateLimitGuard', () => {
     const setHeader = jest.fn();
     const context = {
       getType: () => 'http',
+      getHandler: () => () => undefined,
       switchToHttp: () => ({
         getRequest: () => ({ ip: '1.2.3.4' }),
         getResponse: () => ({ setHeader }),

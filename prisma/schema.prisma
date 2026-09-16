@@ -4,6 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
+  // Prisma resuelve includes con JOIN en PostgreSQL y evita viajes por relación.
+  previewFeatures = ["relationJoins"]
   provider     = "prisma-client"
   output       = "../generated/prisma"
   // NestJS compila a CommonJS; sin esto el cliente se genera como ESM
@@ -69,6 +71,7 @@ model Brand {
 
   products Product[]
 
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "brands_name_trgm_idx")
   @@map("brands")
 }
 
@@ -172,6 +175,11 @@ model Product {
   @@index([brandId])
   @@index([active])
   @@index([sku])
+  @@index([active, name, id])
+  @@index([supplierId, active, name, id])
+  @@index([brandId, active, name, id])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_name_trgm_idx")
+  @@index([sku(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_sku_trgm_idx")
   @@map("products")
 }
 
@@ -212,6 +220,7 @@ model ProductImage {
 
   @@unique([productId, position])
   @@index([productId])
+  @@index([isPrimary, productId])
   @@map("product_images")
 }
 
@@ -243,6 +252,8 @@ model Favorite {
   @@unique([userId, productId])
   /// Sirve el orden de la lista (`createdAt desc` dentro de un usuario).
   @@index([userId, createdAt])
+  @@index([userId, createdAt, id])
+  @@index([productId])
   @@map("favorites")
 }
 
@@ -281,6 +292,7 @@ model OrderListItem {
 
   @@id([orderListId, productId])
   @@index([productId])
+  @@index([orderListId, createdAt, productId])
   @@map("order_list_items")
 }
 

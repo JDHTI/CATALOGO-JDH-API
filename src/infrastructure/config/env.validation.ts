@@ -51,6 +51,16 @@ export class EnvironmentVariables {
   @IsOptional()
   API_VERSION: string = 'v1';
 
+  @IsString()
+  @IsOptional()
+  TRUST_PROXY?: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  @IsOptional()
+  HTTP_MAX_INFLIGHT: number = 500;
+
   // -------------------------------------------------------------------- auth
   // Opcional: sin `AUTH_JWKS_URL` la API arranca igual y sirve todo el
   // catálogo público; solo los endpoints privados (favoritos) responden 503.
@@ -81,6 +91,27 @@ export class EnvironmentVariables {
   @IsBoolean()
   @IsOptional()
   DATABASE_LOG_QUERIES: boolean = false;
+
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  DATABASE_POOL_MAX: number = 20;
+
+  @IsInt()
+  @Min(100)
+  @IsOptional()
+  DATABASE_CONNECTION_TIMEOUT: number = 2000;
+
+  @IsInt()
+  @Min(1000)
+  @IsOptional()
+  DATABASE_IDLE_TIMEOUT: number = 30000;
+
+  @IsInt()
+  @Min(100)
+  @IsOptional()
+  DATABASE_STATEMENT_TIMEOUT: number = 5000;
 
   // ------------------------------------------------------------- datawarehouse
   // Todas opcionales: el DWH solo se necesita para importar/sincronizar datos,
@@ -156,9 +187,19 @@ export class EnvironmentVariables {
   REDIS_KEY_PREFIX: string = 'jdh:catalogo:';
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   @IsOptional()
   REDIS_DEFAULT_TTL: number = 300;
+
+  @IsInt()
+  @Min(50)
+  @IsOptional()
+  REDIS_CONNECT_TIMEOUT: number = 1000;
+
+  @IsInt()
+  @Min(50)
+  @IsOptional()
+  REDIS_COMMAND_TIMEOUT: number = 500;
 
   // ------------------------------------------- publicación del catálogo (push)
   // Todas opcionales: solo las define el equipo LOCAL que corre
@@ -239,6 +280,13 @@ export class EnvironmentVariables {
 
 const NUMERIC_KEYS = [
   'PORT',
+  'HTTP_MAX_INFLIGHT',
+  'DATABASE_POOL_MAX',
+  'DATABASE_CONNECTION_TIMEOUT',
+  'DATABASE_IDLE_TIMEOUT',
+  'DATABASE_STATEMENT_TIMEOUT',
+  'REDIS_CONNECT_TIMEOUT',
+  'REDIS_COMMAND_TIMEOUT',
   'DWH_PORT',
   'DWH_POOL_MAX',
   'DWH_POOL_IDLE_TIMEOUT',
