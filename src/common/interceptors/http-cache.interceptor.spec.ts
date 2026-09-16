@@ -15,7 +15,18 @@ describe('HttpCacheInterceptor', () => {
   ): { cache: CacheService; get: jest.Mock; set: jest.Mock } => {
     const get = jest.fn().mockResolvedValue(cached);
     const set = jest.fn().mockResolvedValue(undefined);
-    return { cache: { get, set } as unknown as CacheService, get, set };
+    const wrap = async (
+      key: string,
+      factory: () => Promise<unknown>,
+      ttl?: number,
+    ) => {
+      const value: unknown = await get(key);
+      if (value !== null) return value;
+      const body = await factory();
+      await set(key, body, ttl);
+      return body;
+    };
+    return { cache: { get, set, wrap } as unknown as CacheService, get, set };
   };
 
   const buildContext = (

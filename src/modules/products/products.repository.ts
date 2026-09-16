@@ -91,7 +91,7 @@ export class ProductsRepository {
       return this.findPageImagesFirst(where, query.skip, query.limit);
     }
 
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
         include: PUBLIC_PRODUCT_INCLUDE,
@@ -166,7 +166,7 @@ export class ProductsRepository {
     const withImage = { ...baseWhere, images: HAS_PRIMARY_IMAGE };
     const withoutImage = { ...baseWhere, images: HAS_NO_PRIMARY_IMAGE };
 
-    const [withImageTotal, total] = await this.prisma.$transaction([
+    const [withImageTotal, total] = await Promise.all([
       this.prisma.product.count({ where: withImage }),
       this.prisma.product.count({ where: baseWhere }),
     ]);

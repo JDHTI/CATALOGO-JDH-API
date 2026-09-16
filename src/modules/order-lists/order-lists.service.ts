@@ -46,15 +46,15 @@ export class OrderListsService {
     input: CreateOrderListDto,
   ): Promise<OrderListResponseDto> {
     const name = normalizeName(input.name);
-    const total = await this.lists.count(userId);
-    if (total >= ORDER_LIST_MAX_LISTS) {
+    const created = await this.lists.create(userId, name);
+    if (!created) {
       throw new ConflictException({
         code: ORDER_LIST_LIMIT_REACHED_CODE,
         message: `Un usuario no puede tener más de ${ORDER_LIST_MAX_LISTS} listas`,
       });
     }
 
-    return toOrderListResponse(await this.lists.create(userId, name));
+    return toOrderListResponse(created);
   }
 
   async findOne(userId: string, id: string): Promise<OrderListResponseDto> {

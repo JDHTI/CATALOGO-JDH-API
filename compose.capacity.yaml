@@ -1,0 +1,78 @@
+# Laboratorio desechable, independiente de compose.yaml y de datos reales.
+name: jdh-catalogo-capacity-favourites
+services:
+  api:
+    profiles: ['api']
+    image: jdh-catalogo-capacity-api:local
+    build: .
+    init: true
+    cpus: 2
+    mem_limit: 1g
+    ports: ['127.0.0.1:18080:8080']
+    extra_hosts: ['host.docker.internal:host-gateway']
+    environment:
+      NODE_ENV: production
+      PORT: '8080'
+      API_PREFIX: api
+      API_VERSION: v1
+      DATABASE_URL: postgresql://capacity:capacity-local-only@postgres:5432/capacity
+      DATABASE_POOL_MAX: '${CAPACITY_POOL_MAX:-20}'
+      DATABASE_CONNECTION_TIMEOUT: '2000'
+      DATABASE_STATEMENT_TIMEOUT: '5000'
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      REDIS_KEY_PREFIX: 'capacity:'
+      S3_ENDPOINT: http://127.0.0.1:1
+      S3_BUCKET: capacity
+      S3_ACCESS_KEY_ID: capacity
+      S3_SECRET_ACCESS_KEY: capacity
+      SYNC_PRODUCTS_ENABLED: 'false'
+      AUTH_JWKS_URL: http://host.docker.internal:18081/jwks
+      AUTH_JWT_ISSUER: capacity
+      AUTH_JWT_AUDIENCE: capacity
+      RATE_LIMIT_MAX: '1000000'
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+  postgres:
+    image: postgres:17-alpine
+    cpus: 2
+    mem_limit: 1g
+    environment:
+      POSTGRES_USER: capacity
+      POSTGRES_PASSWORD: capacity-local-only
+      POSTGRES_DB: capacity
+    ports: ['127.0.0.1:15435:5432']
+    volumes: ['capacity-postgres:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U capacity -d capacity']
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    cpus: 1
+    mem_limit: 512m
+    volumes: ['capacity-redis:/data']
+    command:
+      [
+        'redis-server',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'allkeys-lfu',
+        '--save',
+        '',
+        '--appendonly',
+        'yes',
+      ]
+    ports: ['127.0.0.1:16380:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  capacity-postgres:
+  capacity-redis:

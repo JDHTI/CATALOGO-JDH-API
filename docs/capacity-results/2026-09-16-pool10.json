@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-09-16T13:27:13.819Z",
+  "loadGeneratorNode": "v24.18.0",
+  "apiRuntime": "Docker node:22-alpine, 2 CPU, 1 GiB RAM",
+  "platform": "win32",
+  "logicalCpus": 12,
+  "hostMemoryGiB": 24,
+  "users": 250,
+  "fixtureProducts": 20000,
+  "databasePoolMax": 10,
+  "cold": {
+    "requests": 250,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 2476,
+    "p95Ms": 2534,
+    "p99Ms": 2537,
+    "statuses": {
+      "200": 250
+    }
+  },
+  "warm": {
+    "requests": 250,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 1103,
+    "p95Ms": 1158,
+    "p99Ms": 1161,
+    "statuses": {
+      "200": 250
+    }
+  },
+  "mixed": {
+    "requests": 65775,
+    "errors": 160,
+    "errorRate": 0.0024325351577347016,
+    "p50Ms": 77,
+    "p95Ms": 390,
+    "p99Ms": 871,
+    "statuses": {
+      "200": 65615,
+      "500": 160
+    },
+    "elapsedSeconds": 361.521658,
+    "rps": 181.93930721572426,
+    "byRoute": {
+      "catalog": {
+        "requests": 6569,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 77,
+        "p95Ms": 444,
+        "p99Ms": 839,
+        "statuses": {
+          "200": 6569
+        }
+      },
+      "favorites-read": {
+        "requests": 6581,
+        "errors": 44,
+        "errorRate": 0.006685913994833612,
+        "p50Ms": 58,
+        "p95Ms": 291,
+        "p99Ms": 1060,
+        "statuses": {
+          "200": 6537,
+          "500": 44
+        }
+      },
+      "detail": {
+        "requests": 6574,
+        "errors": 30,
+        "errorRate": 0.004563431700638881,
+        "p50Ms": 76,
+        "p95Ms": 335,
+        "p99Ms": 927,
+        "statuses": {
+          "200": 6544,
+          "500": 30
+        }
+      },
+      "brands": {
+        "requests": 6578,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 53,
+        "p95Ms": 238,
+        "p99Ms": 458,
+        "statuses": {
+          "200": 6578
+        }
+      },
+      "lists-read": {
+        "requests": 6576,
+        "errors": 22,
+        "errorRate": 0.0033454987834549877,
+        "p50Ms": 96,
+        "p95Ms": 503,
+        "p99Ms": 968,
+        "statuses": {
+          "200": 6554,
+          "500": 22
+        }
+      },
+      "favorites-write": {
+        "requests": 6584,
+        "errors": 20,
+        "errorRate": 0.003037667071688943,
+        "p50Ms": 80,
+        "p95Ms": 376,
+        "p99Ms": 758,
+        "statuses": {
+          "200": 6564,
+          "500": 20
+        }
+      },
+      "featured": {
+        "requests": 6576,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 74,
+        "p95Ms": 415,
+        "p99Ms": 869,
+        "statuses": {
+          "200": 6576
+        }
+      },
+      "lists-write": {
+        "requests": 6576,
+        "errors": 18,
+        "errorRate": 0.002737226277372263,
+        "p50Ms": 111,
+        "p95Ms": 447,
+        "p99Ms": 986,
+        "statuses": {
+          "200": 6558,
+          "500": 18
+        }
+      },
+      "search": {
+        "requests": 6576,
+        "errors": 26,
+        "errorRate": 0.003953771289537713,
+        "p50Ms": 81,
+        "p95Ms": 356,
+        "p99Ms": 901,
+        "statuses": {
+          "200": 6550,
+          "500": 26
+        }
+      },
+      "images-first": {
+        "requests": 6585,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 80,
+        "p95Ms": 451,
+        "p99Ms": 1014,
+        "statuses": {
+          "200": 6585
+        }
+      }
+    }
+  },
+  "redisDown": {
+    "requests": 250,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 759,
+    "p95Ms": 803,
+    "p99Ms": 805,
+    "statuses": {
+      "200": 250
+    }
+  },
+  "databaseStats": {
+    "numbackends": 11,
+    "blks_hit": "5761956",
+    "blks_read": "660"
+  },
+  "redisStats": "# Stats\r\ntotal_connections_received:369\r\ntotal_commands_processed:248651\r\ninstantaneous_ops_per_sec:0\r\ntotal_net_input_bytes:35396932\r\ntotal_net_output_bytes:304279639\r\ntotal_net_repl_input_bytes:0\r\ntotal_net_repl_output_bytes:0\r\ninstantaneous_input_kbps:0.01\r\ninstantaneous_output_kbps:0.00\r\ninstantaneous_input_repl_kbps:0.00\r\ninstantaneous_output_repl_kbps:0.00\r\nrejected_connections:0\r\nsync_full:0\r\nsync_partial_ok:0\r\nsync_partial_err:0\r\nexpired_subkeys:0\r\nexpired_keys:1914\r\nexpired_stale_perc:8.08\r\nexpired_time_cap_reached_count:0\r\nexpire_cycle_cpu_milliseconds:72\r\nevicted_keys:0\r\nevicted_clients:0\r\nevicted_scripts:0\r\ntotal_eviction_exceeded_time:0\r\ncurrent_eviction_exceeded_time:0\r\nkeyspace_hits:92944\r\nkeyspace_misses:11091\r\npubsub_channels:0\r\npubsub_patterns:0\r\npubsubshard_channels:0\r\nlatest_fork_usec:0\r\ntotal_forks:0\r\nmigrate_cached_sockets:0\r\nslave_expires_tracked_keys:0\r\nactive_defrag_hits:0\r\nactive_defrag_misses:0\r\nactive_defrag_key_hits:0\r\nactive_defrag_key_misses:0\r\ntotal_active_defrag_time:0\r\ncurrent_active_defrag_time:0\r\ntracking_total_keys:0\r\ntracking_total_items:0\r\ntracking_total_prefixes:0\r\nunexpected_error_replies:0\r\ntotal_error_replies:0\r\ndump_payload_sanitizations:0\r\ntotal_reads_processed:45514\r\ntotal_writes_processed:45355\r\nio_threaded_reads_processed:0\r\nio_threaded_writes_processed:0\r\nclient_query_buffer_limit_disconnections:0\r\nclient_output_buffer_limit_disconnections:0\r\nreply_buffer_shrinks:7\r\nreply_buffer_expands:20\r\neventloop_cycles:49554\r\neventloop_duration_sum:11960555\r\neventloop_duration_cmd_sum:2043955\r\ninstantaneous_eventloop_cycles_per_sec:10\r\ninstantaneous_eventloop_duration_usec:1457\r\nacl_access_denied_auth:0\r\nacl_access_denied_cmd:0\r\nacl_access_denied_key:0\r\nacl_access_denied_channel:0\r\n",
+  "correctness": {
+    "listLimit": true,
+    "sameItemUpsert": true,
+    "favoriteIdempotence": true,
+    "userIsolation": true,
+    "redisRecovery": true
+  },
+  "limitations": "API, generador y Docker comparten host. JWT/JWKS sintéticos. Sin UI, login, imágenes ni red externa. Cuota por IP elevada solo en laboratorio."
+}

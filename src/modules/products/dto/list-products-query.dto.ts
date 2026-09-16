@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 import { PaginationQueryDto } from '@common/index';
 
@@ -29,6 +36,7 @@ export class ListProductsQueryDto extends PaginationQueryDto {
     description: 'Búsqueda case-insensitive sobre nombre, sku y marca',
   })
   @IsString()
+  @MaxLength(200)
   @IsOptional()
   search?: string;
 

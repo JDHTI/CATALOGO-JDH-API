@@ -159,9 +159,9 @@ describe('parseGalleryPosition', () => {
 
   it('ignora sufijos de copia de Windows', () => {
     expect(parseGalleryPosition('1B-1001-FRUCO TOMATE 4350 G (1).png')).toBe(1);
-    expect(
-      parseGalleryPosition('0212-01B (1).png', 'referencia-primero'),
-    ).toBe(1);
+    expect(parseGalleryPosition('0212-01B (1).png', 'referencia-primero')).toBe(
+      1,
+    );
   });
 
   it('devuelve null si el archivo no sigue el layout', () => {
@@ -269,7 +269,12 @@ describe('parseReferenceFolderCandidate', () => {
 
   it('normaliza la referencia y su carpeta en el bucket', () => {
     expect(parseReferenceFolderCandidate('  ref-90a  ', 2)).toEqual([
-      { sku: 'REF-90A', position: 2, isPrimary: false, objectFolder: 'ref-90a' },
+      {
+        sku: 'REF-90A',
+        position: 2,
+        isPrimary: false,
+        objectFolder: 'ref-90a',
+      },
     ]);
   });
 

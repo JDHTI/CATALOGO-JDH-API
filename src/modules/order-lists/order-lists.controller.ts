@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -55,6 +56,7 @@ export class OrderListsController {
   constructor(private readonly lists: OrderListsService) {}
 
   @Get()
+  @Header('Cache-Control', 'private, no-store')
   @ApiOperation({ summary: 'Lista los borradores del usuario autenticado' })
   @ApiOkResponse({ type: OrderListsResponseDto })
   findAll(@CurrentUser() userId: string): Promise<OrderListsResponseDto> {
@@ -75,6 +77,7 @@ export class OrderListsController {
   }
 
   @Get(':listId/items')
+  @Header('Cache-Control', 'private, no-store')
   @ApiOperation({
     summary: 'Lista los productos de un borrador',
     description:
@@ -121,6 +124,7 @@ export class OrderListsController {
   }
 
   @Get(':listId')
+  @Header('Cache-Control', 'private, no-store')
   @ApiOperation({ summary: 'Obtiene un borrador del usuario autenticado' })
   @ApiOkResponse({ type: OrderListResponseDto })
   @ApiNotFoundResponse({ description: 'La lista no existe' })

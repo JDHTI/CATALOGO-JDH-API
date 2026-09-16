@@ -123,13 +123,12 @@ describe('OrderListsService', () => {
 
     await service.create(USER, input('  Mi lista  '));
 
-    expect(mocks.count).toHaveBeenCalledWith(USER);
     expect(mocks.create).toHaveBeenCalledWith(USER, 'Mi lista');
   });
 
   it('devuelve el error contractual al alcanzar diez listas', async () => {
     const { service, mocks } = buildService({
-      count: jest.fn().mockResolvedValue(ORDER_LIST_MAX_LISTS),
+      create: jest.fn().mockResolvedValue(null),
     });
 
     let error: unknown;
@@ -143,7 +142,7 @@ describe('OrderListsService', () => {
     expect((error as ConflictException).getResponse()).toMatchObject({
       code: ORDER_LIST_LIMIT_REACHED_CODE,
     });
-    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.create).toHaveBeenCalledWith(USER, 'Otra');
   });
 
   it('no permite acceder ni renombrar una lista de otro usuario', async () => {

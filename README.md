@@ -1,3 +1,12 @@
+# JDH Catálogo API
+
+API NestJS con PostgreSQL/Prisma, caché Redis y almacenamiento S3/MinIO.
+
+- [Arquitectura y preparación para 250 usuarios simultáneos](docs/architecture-capacity.md)
+- [Infraestructura y despliegue](docs/infrastructure.md)
+- [Favoritos](docs/favoritos.md) y [listas de pedido](docs/order-lists.md)
+- Prueba aislada de capacidad: `pnpm test:capacity` (requiere Docker y build actualizado).
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>

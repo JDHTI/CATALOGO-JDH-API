@@ -26,6 +26,7 @@ export class RateLimitGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (context.getType() !== 'http') return true;
+    if (Reflect.getMetadata('health:probe', context.getHandler())) return true;
 
     const http = context.switchToHttp();
     const request = http.getRequest<Request>();

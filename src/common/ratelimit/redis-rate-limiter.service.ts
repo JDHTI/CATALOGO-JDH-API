@@ -38,6 +38,7 @@ export class RedisRateLimiterService implements RateLimiter {
   private readonly logger = new Logger(RedisRateLimiterService.name);
   private readonly ttl: number;
   private readonly max: number;
+  private lastWarningAt = 0;
 
   constructor(
     private readonly cache: CacheService,
@@ -66,9 +67,10 @@ export class RedisRateLimiterService implements RateLimiter {
       };
     } catch (error) {
       // Fallo abierto: sin Redis no limitamos, pero la API sigue en pie.
-      this.logger.warn(
-        `Rate limiter sin Redis, se permite la petición ("${key}"): ${(error as Error).message}`,
-      );
+      if (Date.now() - this.lastWarningAt >= 30000) {
+        this.lastWarningAt = Date.now();
+        this.logger.warn(`Rate limiter sin Redis: ${(error as Error).message}`);
+      }
       return {
         allowed: true,
         limit: this.max,

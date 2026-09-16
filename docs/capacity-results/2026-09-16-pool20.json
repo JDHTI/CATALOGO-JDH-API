@@ -1,0 +1,183 @@
+{
+  "timestamp": "2026-09-16T13:34:25.616Z",
+  "loadGeneratorNode": "v24.18.0",
+  "apiRuntime": "Docker node:22-alpine, 2 CPU, 1 GiB RAM",
+  "platform": "win32",
+  "logicalCpus": 12,
+  "hostMemoryGiB": 24,
+  "users": 250,
+  "fixtureProducts": 20000,
+  "databasePoolMax": 20,
+  "cold": {
+    "requests": 250,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 1730,
+    "p95Ms": 1818,
+    "p99Ms": 1821,
+    "statuses": {
+      "200": 250
+    }
+  },
+  "warm": {
+    "requests": 250,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 863,
+    "p95Ms": 942,
+    "p99Ms": 945,
+    "statuses": {
+      "200": 250
+    }
+  },
+  "mixed": {
+    "requests": 66062,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 74,
+    "p95Ms": 374,
+    "p99Ms": 750,
+    "statuses": {
+      "200": 66062
+    },
+    "elapsedSeconds": 361.40242500000005,
+    "rps": 182.79346077990482,
+    "byRoute": {
+      "featured": {
+        "requests": 6608,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 71,
+        "p95Ms": 411,
+        "p99Ms": 871,
+        "statuses": {
+          "200": 6608
+        }
+      },
+      "favorites-read": {
+        "requests": 6608,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 57,
+        "p95Ms": 257,
+        "p99Ms": 453,
+        "statuses": {
+          "200": 6608
+        }
+      },
+      "detail": {
+        "requests": 6598,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 74,
+        "p95Ms": 326,
+        "p99Ms": 623,
+        "statuses": {
+          "200": 6598
+        }
+      },
+      "lists-read": {
+        "requests": 6612,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 92,
+        "p95Ms": 487,
+        "p99Ms": 1192,
+        "statuses": {
+          "200": 6612
+        }
+      },
+      "favorites-write": {
+        "requests": 6610,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 76,
+        "p95Ms": 334,
+        "p99Ms": 618,
+        "statuses": {
+          "200": 6610
+        }
+      },
+      "catalog": {
+        "requests": 6606,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 75,
+        "p95Ms": 435,
+        "p99Ms": 914,
+        "statuses": {
+          "200": 6606
+        }
+      },
+      "brands": {
+        "requests": 6604,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 51,
+        "p95Ms": 250,
+        "p99Ms": 473,
+        "statuses": {
+          "200": 6604
+        }
+      },
+      "lists-write": {
+        "requests": 6609,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 106,
+        "p95Ms": 410,
+        "p99Ms": 743,
+        "statuses": {
+          "200": 6609
+        }
+      },
+      "search": {
+        "requests": 6603,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 78,
+        "p95Ms": 368,
+        "p99Ms": 651,
+        "statuses": {
+          "200": 6603
+        }
+      },
+      "images-first": {
+        "requests": 6604,
+        "errors": 0,
+        "errorRate": 0,
+        "p50Ms": 75,
+        "p95Ms": 477,
+        "p99Ms": 957,
+        "statuses": {
+          "200": 6604
+        }
+      }
+    }
+  },
+  "redisDown": {
+    "requests": 250,
+    "errors": 0,
+    "errorRate": 0,
+    "p50Ms": 1063,
+    "p95Ms": 1160,
+    "p99Ms": 1165,
+    "statuses": {
+      "200": 250
+    }
+  },
+  "databaseStats": {
+    "numbackends": 21,
+    "blks_hit": "5884607",
+    "blks_read": "653"
+  },
+  "redisStats": "# Stats\r\ntotal_connections_received:367\r\ntotal_commands_processed:249660\r\ninstantaneous_ops_per_sec:1\r\ntotal_net_input_bytes:35554895\r\ntotal_net_output_bytes:304524056\r\ntotal_net_repl_input_bytes:0\r\ntotal_net_repl_output_bytes:0\r\ninstantaneous_input_kbps:0.02\r\ninstantaneous_output_kbps:0.01\r\ninstantaneous_input_repl_kbps:0.00\r\ninstantaneous_output_repl_kbps:0.00\r\nrejected_connections:0\r\nsync_full:0\r\nsync_partial_ok:0\r\nsync_partial_err:0\r\nexpired_subkeys:0\r\nexpired_keys:1944\r\nexpired_stale_perc:7.85\r\nexpired_time_cap_reached_count:0\r\nexpire_cycle_cpu_milliseconds:70\r\nevicted_keys:0\r\nevicted_clients:0\r\nevicted_scripts:0\r\ntotal_eviction_exceeded_time:0\r\ncurrent_eviction_exceeded_time:0\r\nkeyspace_hits:93247\r\nkeyspace_misses:11130\r\npubsub_channels:0\r\npubsub_patterns:0\r\npubsubshard_channels:0\r\nlatest_fork_usec:0\r\ntotal_forks:0\r\nmigrate_cached_sockets:0\r\nslave_expires_tracked_keys:0\r\nactive_defrag_hits:0\r\nactive_defrag_misses:0\r\nactive_defrag_key_hits:0\r\nactive_defrag_key_misses:0\r\ntotal_active_defrag_time:0\r\ncurrent_active_defrag_time:0\r\ntracking_total_keys:0\r\ntracking_total_items:0\r\ntracking_total_prefixes:0\r\nunexpected_error_replies:0\r\ntotal_error_replies:0\r\ndump_payload_sanitizations:0\r\ntotal_reads_processed:45348\r\ntotal_writes_processed:45199\r\nio_threaded_reads_processed:0\r\nio_threaded_writes_processed:0\r\nclient_query_buffer_limit_disconnections:0\r\nclient_output_buffer_limit_disconnections:0\r\nreply_buffer_shrinks:6\r\nreply_buffer_expands:12\r\neventloop_cycles:49393\r\neventloop_duration_sum:11847852\r\neventloop_duration_cmd_sum:2047933\r\ninstantaneous_eventloop_cycles_per_sec:12\r\ninstantaneous_eventloop_duration_usec:894\r\nacl_access_denied_auth:0\r\nacl_access_denied_cmd:0\r\nacl_access_denied_key:0\r\nacl_access_denied_channel:0\r\n",
+  "correctness": {
+    "listLimit": true,
+    "sameItemUpsert": true,
+    "favoriteIdempotence": true,
+    "userIsolation": true,
+    "redisRecovery": true
+  },
+  "limitations": "API, generador y Docker comparten host. JWT/JWKS sintéticos. Sin UI, login, imágenes ni red externa. Cuota por IP elevada solo en laboratorio."
+}

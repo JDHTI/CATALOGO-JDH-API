@@ -16,12 +16,33 @@ export interface HealthReport {
 
 @Injectable()
 export class HealthService {
+  private readiness?: Promise<boolean>;
+  private readinessExpires = 0;
   constructor(
     private readonly prisma: PrismaService,
     private readonly datawarehouse: DatawarehouseService,
     private readonly cache: CacheService,
     private readonly storage: StorageService,
   ) {}
+
+  /** Una sonda compartida por 2s; el DWH y las imágenes no bloquean la API. */
+  isReady(): Promise<boolean> {
+    if (this.readiness && Date.now() < this.readinessExpires)
+      return this.readiness;
+    this.readinessExpires = Infinity;
+    this.readiness = Promise.all([
+      this.prisma.healthCheck(),
+      this.cache.healthCheck(),
+    ])
+      .then(
+        (results) => results.every(Boolean),
+        () => false,
+      )
+      .finally(() => {
+        this.readinessExpires = Date.now() + 2000;
+      });
+    return this.readiness;
+  }
 
   async check(): Promise<HealthReport> {
     const checks: Record<string, () => Promise<boolean> | null> = {

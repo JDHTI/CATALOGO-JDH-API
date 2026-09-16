@@ -19,6 +19,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CacheService.name);
   private readonly client: Redis;
   private readonly defaultTtl: number;
+  private readonly inFlight = new Map<string, Promise<unknown>>();
+  private generation = 0;
+  private lastWarningAt = 0;
 
   constructor(config: ConfigService) {
     const redis = config.getOrThrow<RedisConfig>(REDIS_CONFIG);
@@ -31,12 +34,16 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       db: redis.db,
       keyPrefix: redis.keyPrefix,
       lazyConnect: true,
-      maxRetriesPerRequest: 2,
+      maxRetriesPerRequest: 0,
+      enableOfflineQueue: false,
+      enableAutoPipelining: true,
+      connectTimeout: redis.connectTimeout,
+      commandTimeout: redis.commandTimeout,
       enableReadyCheck: true,
     });
 
     this.client.on('error', (error) =>
-      this.logger.warn(`Error de Redis: ${error.message}`),
+      this.warn(`Error de Redis: ${error.message}`),
     );
   }
 
@@ -61,32 +68,37 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   }
 
   async get<T>(key: string): Promise<T | null> {
+    if (this.client.status !== 'ready') return null;
     try {
       const value = await this.client.get(key);
       return value === null ? null : (JSON.parse(value) as T);
     } catch (error) {
-      this.logger.warn(`Fallo al leer "${key}": ${(error as Error).message}`);
+      this.warn(`Fallo al leer caché: ${(error as Error).message}`);
       return null;
     }
   }
 
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    if (this.client.status !== 'ready' || value === null || value === undefined)
+      return;
+    const ttl = ttlSeconds ?? this.defaultTtl;
+    if (ttl <= 0) return;
     try {
       await this.client.set(
         key,
         JSON.stringify(value),
         'EX',
-        ttlSeconds ?? this.defaultTtl,
+        Math.max(1, Math.floor(ttl * (0.9 + Math.random() * 0.1))),
       );
     } catch (error) {
-      this.logger.warn(
-        `Fallo al escribir "${key}": ${(error as Error).message}`,
-      );
+      this.warn(`Fallo al escribir caché: ${(error as Error).message}`);
     }
   }
 
   async del(...keys: string[]): Promise<void> {
     if (keys.length === 0) return;
+    this.generation++;
+    keys.forEach((key) => this.inFlight.delete(key));
     try {
       await this.client.del(...keys);
     } catch (error) {
@@ -96,6 +108,8 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
 
   /** Borra por patrón usando SCAN (nunca KEYS, que bloquea el servidor). */
   async delByPattern(pattern: string): Promise<number> {
+    this.generation++;
+    this.inFlight.clear();
     const prefix = this.client.options.keyPrefix ?? '';
     let deleted = 0;
 
@@ -113,7 +127,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
 
         if (keys.length > 0) {
           // SCAN devuelve claves con prefijo; el cliente lo vuelve a añadir.
-          await this.client.del(...keys.map((key) => key.slice(prefix.length)));
+          await this.client.unlink(
+            ...keys.map((key) => key.slice(prefix.length)),
+          );
           deleted += keys.length;
         }
       } while (cursor !== '0');
@@ -123,21 +139,34 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
+    this.generation++;
+    this.inFlight.clear();
     return deleted;
   }
 
   /** Devuelve el valor en caché o lo calcula y lo almacena. */
-  async wrap<T>(
+  wrap<T>(
     key: string,
     factory: () => Promise<T>,
     ttlSeconds?: number,
   ): Promise<T> {
-    const cached = await this.get<T>(key);
-    if (cached !== null) return cached;
-
-    const value = await factory();
-    await this.set(key, value, ttlSeconds);
-    return value;
+    const existing = this.inFlight.get(key);
+    if (existing) return existing as Promise<T>;
+    const generation = this.generation;
+    const pending = (async () => {
+      const cached = await this.get<T>(key);
+      if (cached !== null) return cached;
+      const value = await factory();
+      if (generation === this.generation)
+        await this.set(key, value, ttlSeconds);
+      return value;
+    })();
+    this.inFlight.set(key, pending);
+    const cleanup = () => {
+      if (this.inFlight.get(key) === pending) this.inFlight.delete(key);
+    };
+    void pending.then(cleanup, cleanup);
+    return pending;
   }
 
   /** Alias semántico de `wrap`: devuelve el valor en caché o lo calcula. */
@@ -158,6 +187,13 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   }
 
   async healthCheck(): Promise<boolean> {
+    if (this.client.status !== 'ready') return false;
     return (await this.client.ping()) === 'PONG';
+  }
+
+  private warn(message: string): void {
+    if (Date.now() - this.lastWarningAt < 30000) return;
+    this.lastWarningAt = Date.now();
+    this.logger.warn(message);
   }
 }
