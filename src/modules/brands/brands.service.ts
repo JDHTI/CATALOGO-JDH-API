@@ -12,6 +12,7 @@ export class BrandsService {
   async findAll(query: ListBrandsQueryDto): Promise<BrandResponseDto[]> {
     const brands = await this.brands.findAllWithActiveProducts(
       query.supplierId,
+      query.supplierIds,
     );
 
     return brands.map((brand) => ({

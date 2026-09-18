@@ -116,8 +116,16 @@ export class ProductsRepository {
 
     return {
       active: true,
-      ...(query.supplierId ? { supplierId: query.supplierId } : {}),
-      ...(query.brandId ? { brandId: query.brandId } : {}),
+      ...(query.supplierIds?.length
+        ? { supplierId: { in: query.supplierIds } }
+        : query.supplierId
+          ? { supplierId: query.supplierId }
+          : {}),
+      ...(query.brandIds?.length
+        ? { brandId: { in: query.brandIds } }
+        : query.brandId
+          ? { brandId: query.brandId }
+          : {}),
       ...(searchWhere ? { OR: searchWhere } : {}),
     };
   }

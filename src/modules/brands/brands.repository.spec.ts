@@ -2,10 +2,10 @@ import type { PrismaService } from '@infrastructure/database';
 
 import { BrandsRepository } from './brands.repository';
 
-describe('BrandsRepository', () => {
-  const buildPrisma = (findMany: jest.Mock): PrismaService =>
-    ({ brand: { findMany } }) as unknown as PrismaService;
+const buildPrisma = (findMany: jest.Mock): PrismaService =>
+  ({ brand: { findMany } }) as unknown as PrismaService;
 
+describe('BrandsRepository', () => {
   it('cuenta solo productos activos cuando no hay proveedor', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
 
@@ -37,5 +37,21 @@ describe('BrandsRepository', () => {
     // El conteo debe usar el mismo criterio que la lista: si fuera global, la
     // UI mostraría un número que no corresponde a las marcas que enseña.
     expect(select._count.select.products).toEqual({ where: expected });
+  });
+});
+
+it('acota marcas y conteos a todos los proveedores seleccionados', async () => {
+  const findMany = jest.fn().mockResolvedValue([]);
+  await new BrandsRepository(buildPrisma(findMany)).findAllWithActiveProducts(
+    undefined,
+    [1, 2],
+  );
+  const filter = { active: true, supplierId: { in: [1, 2] } };
+  const [args] = findMany.mock.calls[0] as [
+    { where: unknown; select: { _count: unknown } },
+  ];
+  expect(args.where).toEqual({ products: { some: filter } });
+  expect(args.select._count).toEqual({
+    select: { products: { where: filter } },
   });
 });

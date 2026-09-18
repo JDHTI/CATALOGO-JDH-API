@@ -58,3 +58,25 @@ describe('ListProductsQueryDto', () => {
     expect(validateSync(dto).length).toBeGreaterThan(0);
   });
 });
+
+describe('filtros multiples', () => {
+  it('acepta CSV y parametros repetidos', () => {
+    const dto = plainToInstance(ListProductsQueryDto, {
+      supplierIds: '1,2',
+      brandIds: ['3', '4,5'],
+    });
+    expect(validateSync(dto)).toHaveLength(0);
+    expect(dto.supplierIds).toEqual([1, 2]);
+    expect(dto.brandIds).toEqual([3, 4, 5]);
+  });
+  it.each(['', '1,', 'abc', '0', '-1', '1.5', []])(
+    'rechaza IDs invalidos: %j',
+    (value) => {
+      expect(
+        validateSync(
+          plainToInstance(ListProductsQueryDto, { supplierIds: value }),
+        ).length,
+      ).toBeGreaterThan(0);
+    },
+  );
+});
