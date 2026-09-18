@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
+  ArrayNotEmpty,
   IsIn,
   IsInt,
   IsOptional,
@@ -32,6 +34,40 @@ export type ProductSearchMode = (typeof PRODUCT_SEARCH_MODES)[number];
 
 /** Filtros del listado público de productos. */
 export class ListProductsQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'IDs separados por coma; OR dentro del grupo, AND entre grupos. Tiene prioridad sobre el ID singular.',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    (Array.isArray(value) ? value : [value]).flatMap((part: unknown) =>
+      typeof part === 'string' ? part.split(',').map(Number) : [part],
+    ),
+  )
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  supplierIds?: number[];
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'IDs separados por coma; OR dentro del grupo, AND entre grupos. Tiene prioridad sobre el ID singular.',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    (Array.isArray(value) ? value : [value]).flatMap((part: unknown) =>
+      typeof part === 'string' ? part.split(',').map(Number) : [part],
+    ),
+  )
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  brandIds?: number[];
+
   @ApiPropertyOptional({
     description: 'Búsqueda case-insensitive sobre nombre, sku y marca',
   })

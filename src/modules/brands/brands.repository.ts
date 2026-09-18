@@ -22,10 +22,15 @@ export class BrandsRepository {
    */
   async findAllWithActiveProducts(
     supplierId?: number,
+    supplierIds?: number[],
   ): Promise<BrandWithActiveCount[]> {
     const productFilter: Prisma.ProductWhereInput = {
       active: true,
-      ...(supplierId ? { supplierId } : {}),
+      ...(supplierIds?.length
+        ? { supplierId: { in: supplierIds } }
+        : supplierId
+          ? { supplierId }
+          : {}),
     };
 
     const brands = await this.prisma.brand.findMany({

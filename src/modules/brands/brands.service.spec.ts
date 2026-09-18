@@ -28,7 +28,10 @@ describe('BrandsService', () => {
       // Sin logo viaja null, nunca cadena vacía: el placeholder lo pone la UI.
       { id: 2, nombre: 'MAKITA', totalProductos: 3, logoUrl: null },
     ]);
-    expect(findAllWithActiveProducts).toHaveBeenCalledWith(undefined);
+    expect(findAllWithActiveProducts).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+    );
   });
 
   it('propaga el filtro por proveedor al repositorio', async () => {
@@ -41,6 +44,6 @@ describe('BrandsService', () => {
 
     await service.findAll({ supplierId: 5 });
 
-    expect(findAllWithActiveProducts).toHaveBeenCalledWith(5);
+    expect(findAllWithActiveProducts).toHaveBeenCalledWith(5, undefined);
   });
 });

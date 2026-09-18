@@ -263,3 +263,45 @@ describe('ProductsRepository.findFeatured', () => {
     expect(findMany).not.toHaveBeenCalled();
   });
 });
+
+describe('filtros multiples y paginacion', () => {
+  it.each(['nombre', 'conImagen'] as const)(
+    'combina grupos en filas y conteos con orden %s',
+    async (orderBy) => {
+      const findMany = jest.fn().mockResolvedValue([]);
+      const count = jest.fn().mockResolvedValue(30);
+      const repository = new ProductsRepository({
+        product: { findMany, count },
+      } as unknown as PrismaService);
+      await repository.findActivePage(
+        listQuery({
+          supplierIds: [1, 2],
+          brandIds: [3, 4],
+          supplierId: 9,
+          search: 'arroz',
+          page: 2,
+          limit: 12,
+          orderBy,
+        }),
+      );
+      const filters = {
+        active: true,
+        supplierId: { in: [1, 2] },
+        brandId: { in: [3, 4] },
+      };
+      const [args] = findMany.mock.calls[0] as [
+        { where: Record<string, unknown>; skip: number; take: number },
+      ];
+      expect(args.where).toMatchObject(filters);
+      expect(args.where.OR).toBeInstanceOf(Array);
+      expect(args.skip).toBe(12);
+      expect(args.take).toBe(12);
+      for (const [call] of count.mock.calls as [
+        { where: Record<string, unknown> },
+      ][]) {
+        expect(call.where).toMatchObject(filters);
+        expect(call.where.OR).toEqual(args.where.OR);
+      }
+    },
+  );
+});
