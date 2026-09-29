@@ -27,6 +27,7 @@ export function toProductResponse(
       description: product.seoDescription,
     },
     marca: product.brand?.name ?? null,
+    marcaId: product.brandId,
     fabricante: product.manufacturer?.name ?? null,
     proveedor: { id: product.supplier.id, nombre: product.supplier.name },
     categoria: product.category
