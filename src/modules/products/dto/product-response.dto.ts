@@ -86,6 +86,16 @@ export class ProductResponseDto {
   @ApiProperty({ nullable: true, type: String })
   marca!: string | null;
 
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    example: 20,
+    description:
+      'ID de la marca, para filtrar `GET /products?brandId=` (p. ej. otros ' +
+      'productos de la misma marca). `null` si el producto no tiene marca.',
+  })
+  marcaId!: number | null;
+
   @ApiProperty({ nullable: true, type: String })
   fabricante!: string | null;
 

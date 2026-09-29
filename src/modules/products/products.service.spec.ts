@@ -17,6 +17,7 @@ const product = {
   seoTitle: null,
   seoDescription: null,
   supplier: { id: 1, name: 'ACME' },
+  brandId: 20,
   brand: { name: 'DeWalt' },
   manufacturer: null,
   category: null,
@@ -42,6 +43,7 @@ const expectedResponse = {
   descripcionLarga: null,
   seo: { title: null, description: null },
   marca: 'DeWalt',
+  marcaId: 20,
   fabricante: null,
   proveedor: { id: 1, nombre: 'ACME' },
   categoria: null,
@@ -142,6 +144,7 @@ describe('ProductsService', () => {
   it('devuelve null en marca/imagenUrl cuando no hay datos', async () => {
     const bare = {
       ...product,
+      brandId: null,
       brand: null,
       images: [],
     } as unknown as ProductWithRelations;
@@ -153,6 +156,7 @@ describe('ProductsService', () => {
     const result = await service.findOne(10);
 
     expect(result.marca).toBeNull();
+    expect(result.marcaId).toBeNull();
     expect(result.imagenUrl).toBeNull();
     expect(result.imagenes).toEqual([]);
   });

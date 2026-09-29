@@ -17,6 +17,7 @@ const product = {
   seoTitle: null,
   seoDescription: null,
   supplier: { id: 1, name: 'ACME' },
+  brandId: 20,
   brand: { name: 'DeWalt' },
   manufacturer: null,
   category: null,
@@ -74,6 +75,7 @@ describe('FavoritesService', () => {
       expect(result.data[0]).toMatchObject({
         id: 10,
         nombre: 'Taladro percutor',
+        marcaId: 20,
         proveedor: { id: 1, nombre: 'ACME' },
         imagenes: [],
       });
