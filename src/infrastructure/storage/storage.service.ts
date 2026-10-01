@@ -7,6 +7,7 @@ import {
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
@@ -22,6 +23,11 @@ export interface PutObjectOptions {
 export interface StoredObject {
   key: string;
   url: string;
+}
+
+export interface ListedObject {
+  key: string;
+  lastModified?: Date;
 }
 
 /**
@@ -103,6 +109,32 @@ export class StorageService implements OnModuleDestroy {
     } catch {
       return false;
     }
+  }
+
+  /** Todas las keys bajo `prefix`, recorriendo la paginación de S3 (1000 por página). */
+  async list(prefix: string): Promise<ListedObject[]> {
+    const objects: ListedObject[] = [];
+    let continuationToken: string | undefined;
+
+    do {
+      const response = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.config.bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      for (const item of response.Contents ?? []) {
+        if (item.Key) {
+          objects.push({ key: item.Key, lastModified: item.LastModified });
+        }
+      }
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return objects;
   }
 
   async delete(key: string): Promise<void> {

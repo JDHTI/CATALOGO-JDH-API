@@ -3,6 +3,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { RequestIdMiddleware } from '@common/middlewares/request-id.middleware';
 import { RateLimitModule } from '@common/ratelimit';
 import { InfrastructureModule } from '@infrastructure/infrastructure.module';
+import { BrandMediaModule } from '@modules/brand-media/brand-media.module';
 import { BrandsModule } from '@modules/brands/brands.module';
 import { FavoritesModule } from '@modules/favorites/favorites.module';
 import { HealthModule } from '@modules/health/health.module';
@@ -30,6 +31,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     ProductImagesModule,
     ProductContentModule,
     SiteImagesModule,
+    BrandMediaModule,
   ],
 })
 export class AppModule implements NestModule {
