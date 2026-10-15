@@ -1,0 +1,94 @@
+# CI en runners de GitHub; CD en el runner self-hosted del servidor
+# tienda.jdh.local (192.168.100.216). El servidor está en la red interna: el
+# runner se conecta saliendo hacia GitHub, no hay puertos abiertos para esto.
+#
+# Este repo es el dueño del stack (deploy/). El despliegue usa el clon que ya
+# vive en el servidor (deploy key de solo lectura); deploy/.env y
+# deploy/caddy/ca/ no están versionados: git no los toca. Configuración del
+# runner y de las deploy keys: deploy/README.md → CI/CD.
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint, tipos y pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Solo para `prisma generate` y la carga de la config: las pruebas
+      # unitarias no tocan una base real.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      # package.json no trae "packageManager": la versión se fija aquí (la
+      # misma del lockfile).
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.15.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      # Sin --fix (el script `lint` lo trae): en CI solo se reporta.
+      - run: pnpm exec eslint "{src,apps,libs,test}/**/*.ts"
+      - run: pnpm build
+      - run: pnpm test
+
+  image:
+    name: Imagen Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Desplegar en tienda.jdh.local
+    needs: [check, image]
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: [self-hosted, tienda-jdh]
+    timeout-minutes: 30
+    environment: produccion
+    concurrency:
+      group: deploy-tienda-api
+      cancel-in-progress: false
+    env:
+      APP_DIR: /home/tienda/apps/CATALOGO-JDH-API
+      # Común a los 2 repos: comparten el stack, y dos builds/respaldos a la
+      # vez sobre el mismo compose se pisan.
+      DEPLOY_LOCK: /home/tienda/apps/.deploy.lock
+    steps:
+      - name: Actualizar el código y desplegar el API
+        working-directory: ${{ env.APP_DIR }}
+        # deploy.sh: respaldo pre-deploy → build → up → verificación de la UI,
+        # la API (vía Caddy y /health/ready), el JWKS y /media. api-migrate
+        # aplica las migraciones de Prisma antes de que arranque la API.
+        run: |
+          exec 9>"$DEPLOY_LOCK"
+          flock 9
+          git fetch --prune origin
+          git checkout --force master
+          git reset --hard "${GITHUB_SHA}"
+          git log --oneline -1
+          deploy/scripts/deploy.sh api-migrate api
