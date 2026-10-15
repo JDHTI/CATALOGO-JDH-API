@@ -4,6 +4,7 @@ API NestJS con PostgreSQL/Prisma, caché Redis y almacenamiento S3/MinIO.
 
 - [Arquitectura y preparación para 250 usuarios simultáneos](docs/architecture-capacity.md)
 - [Infraestructura y despliegue](docs/infrastructure.md)
+- [Producción en `tienda.jdh.local`](deploy/README.md): stack Docker Compose + Caddy de la API y la UI, CI/CD con runner self-hosted
 - [Favoritos](docs/favoritos.md) y [listas de pedido](docs/order-lists.md)
 - Prueba aislada de capacidad: `pnpm test:capacity` (requiere Docker y build actualizado).
 

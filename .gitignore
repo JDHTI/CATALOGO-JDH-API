@@ -66,3 +66,7 @@ docker/env/*.env
 # imagenes de proveedor: entrada y reportes de pnpm images:ingest
 /entradas
 /reports
+
+# despliegue (tienda.jdh.local): secretos y CA propia, nunca versionados
+/deploy/.env
+/deploy/caddy/ca/
