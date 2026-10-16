@@ -39,7 +39,9 @@ jobs:
           version: 11.15.1
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Jest carga `jose` (ESM) con require(): exige Node >= 24.9. Es solo
+          # el entorno de las pruebas; la imagen de producción sigue en Node 22.
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
