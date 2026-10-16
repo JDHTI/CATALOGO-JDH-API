@@ -20,6 +20,11 @@ el backend: el respaldo visual (monograma con iniciales) lo pone la UI.
 
 ## Cargar un logo
 
+> Para publicar logos de marca por lote y consumirlos desde el frontend sin
+> pasar por la API, usar `pnpm brands:ingest` (manifiesto público), ver
+> [brand-media.md](brand-media.md). Este comando asigna un logo a una fila
+> de BD.
+
 ```bash
 pnpm logos:upload -- --tipo=marca     --nombre="CORONA"       --archivo=./corona.png
 pnpm logos:upload -- --tipo=proveedor --nombre="ACO UNILEVER" --archivo=./aco.png
