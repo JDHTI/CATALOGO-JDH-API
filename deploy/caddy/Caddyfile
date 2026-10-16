@@ -1,0 +1,70 @@
+# Catálogo JDH — reverse proxy y TLS (tienda.jdh.local).
+#
+# TLS con CA interna: Caddy emite y renueva solo el certificado del sitio,
+# firmado por una CA raíz propia (deploy/caddy/ca/root.crt). Esa root.crt es lo
+# ÚNICO que se distribuye por GPO ("Entidades de certificación raíz de
+# confianza"). Para no repetir la GPO, este servidor puede reusar la CA del
+# servidor de la intranet: copiar su root.crt y root.key a deploy/caddy/ca/ en
+# vez de correr init-ca.sh (ver deploy/README.md → Requisitos externos).
+# La raíz tiene name constraints: solo puede firmar *.jdh.local.
+
+{
+	# No intentar instalar la raíz en el almacén de confianza del contenedor.
+	skip_install_trust
+	pki {
+		ca local {
+			name "JDH Intranet CA"
+			intermediate_cn "JDH Intranet Intermediate CA"
+			root {
+				format pem_file
+				cert /etc/caddy/ca/root.crt
+				key /etc/caddy/ca/root.key
+			}
+		}
+	}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+	log
+}
+
+{$TIENDA_HOST} {
+	tls internal
+	import common
+
+	# API pública del catálogo: la llama el navegador (NEXT_PUBLIC_API_URL).
+	# /health expone el estado de las dependencias: se queda en la red interna
+	# (lo consulta deploy.sh con docker exec, y el healthcheck del contenedor).
+	@api_health path /api/v1/health /api/v1/health/*
+	handle @api_health {
+		respond 404
+	}
+	handle /api/v1/* {
+		reverse_proxy api:8080
+	}
+
+	# Imágenes de producto, logos y banners: SOLO lectura. El bucket vive en
+	# storage:9000 y la ruta pública no lleva su nombre (/media/<key>).
+	@media_write {
+		path /media/*
+		not method GET HEAD OPTIONS
+	}
+	handle @media_write {
+		respond 405
+	}
+	handle_path /media/* {
+		rewrite * /{$S3_BUCKET}{path}
+		reverse_proxy storage:9000
+	}
+
+	# Todo lo demás es la UI (Next.js: páginas, /api/auth, /api/favoritos...).
+	handle {
+		reverse_proxy ui:3000
+	}
+}

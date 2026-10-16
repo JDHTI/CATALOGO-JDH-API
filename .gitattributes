@@ -12,3 +12,7 @@
 
 # Igual para lo que Postgres y Docker ejecutan o leen linea a linea.
 docker/entrypoint.sh text eol=lf
+
+# deploy/ se ejecuta en el servidor Linux: siempre LF, tambien en checkouts
+# de Windows con core.autocrlf (un .sh con CRLF falla con "bad interpreter").
+deploy/** text eol=lf

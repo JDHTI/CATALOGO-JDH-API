@@ -379,6 +379,10 @@ describe('CatalogPushService', () => {
       await buildService(local, remote).run();
       // Desaparece del origen: en destino se apaga, nunca se borra.
       local.product.rows.pop();
+      // El push desactiva con `syncedAt < runDate` (precisión de ms): dos
+      // corridas en el mismo milisegundo no se distinguen y el test sería
+      // intermitente. En producción las corridas están muy separadas.
+      await new Promise((resolve) => setTimeout(resolve, 5));
       const segunda = await buildService(local, remote).run();
 
       expect(remote.product.rows).toHaveLength(2);
