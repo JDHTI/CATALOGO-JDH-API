@@ -5,8 +5,9 @@ directo del CDN: cargar 20 logos nuevos no requiere desplegar la API ni el
 frontend, solo correr el comando. Herramienta **solo local**, igual que
 `images:ingest` y `site-images:upload`.
 
-No hay cruce con proveedores ni con la tabla de marcas del catálogo, y no se
-escribe nada en BD: **la marca es el nombre del archivo**.
+No se escribe nada en BD: **la marca es el nombre del archivo**. La tabla de
+marcas solo se lee para enlazar cada logo con su marca del catálogo (campo
+`marca`, ver abajo).
 
 ## Consumo desde el frontend
 
@@ -19,10 +20,23 @@ GET {S3_PUBLIC_URL}/brands/manifest.json
   "version": 1,
   "generadoEn": "2026-10-01T17:20:00.000Z",
   "marcas": [
-    { "slug": "alpina", "logo": "https://cdn.jdh.com.co/brands/alpina/logo-ab12cd34.webp" }
+    {
+      "slug": "alpina",
+      "logo": "https://cdn.jdh.com.co/brands/alpina/logo-ab12cd34.webp",
+      "marca": { "id": 12, "slug": "alpina", "nombre": "ALPINA" }
+    },
+    { "slug": "nescafe-dolcegusto", "logo": "https://cdn.jdh.com.co/brands/nescafe-dolcegusto/logo-0f1e2d3c.webp" }
   ]
 }
 ```
+
+- `marca` es **opcional**: viene solo si el slug del archivo coincide con un
+  `Brand.slug` (docs/brands.md) de una marca con productos activos, el mismo
+  criterio con el que `GET /brands/{slug}` responde 200. Sin `marca`, el
+  logo no se enlaza a `/marcas/{slug}`. El campo se omite, nunca es `null`.
+- El cruce se hace al generar el manifiesto: si una marca gana o pierde
+  productos activos, se refleja en la siguiente corrida de `brands:ingest`
+  (basta `--solo-manifiesto`).
 
 - Es la **lista completa**: el frontend no debe tener logos fijos en el
   código. Lo que está en el manifiesto existe; lo que no, no.
@@ -59,7 +73,13 @@ pnpm brands:ingest -- --solo-manifiesto         # solo regenera el manifiesto
 - `--force` resube aunque el checksum no haya cambiado.
 - Escribe `reports/brands-ingest-{timestamp}.csv`:
   `archivo, marca, estado, motivo, objectKey`, con `estado` `ok` | `omitido` |
-  `error` | `eliminado`.
+  `error` | `eliminado` | `sin-marca`.
+- `sin-marca`: logo del manifiesto (de todo el bucket, no solo de esta
+  corrida) cuyo slug no coincide con ninguna marca del catálogo. No es error,
+  pero la UI no lo enlaza: hay que renombrar el archivo y volver a cargarlo
+  (con `--prune` para borrar el slug viejo). Si existe una marca que solo
+  difiere en los guiones, el motivo la sugiere
+  (`nescafe-dolcegusto` → `renombra el archivo a nescafe-dolce-gusto`).
 
 ## Cómo deben venir los archivos
 

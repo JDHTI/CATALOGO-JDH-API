@@ -1,5 +1,10 @@
-import { Controller, Get, Query, UseInterceptors } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CacheTTL, HttpCacheInterceptor } from '@common/index';
 
@@ -24,5 +29,21 @@ export class BrandsController {
   @ApiOkResponse({ type: BrandResponseDto, isArray: true })
   findAll(@Query() query: ListBrandsQueryDto): Promise<BrandResponseDto[]> {
     return this.brands.findAll(query);
+  }
+
+  @Get(':slug')
+  @CacheTTL(300)
+  @ApiOperation({
+    summary: 'Marca por slug',
+    description:
+      'Para resolver /marcas/{slug}: luego se filtra ' +
+      '`/products?brandIds={id}`. Solo marcas con productos activos.',
+  })
+  @ApiOkResponse({ type: BrandResponseDto })
+  @ApiNotFoundResponse({
+    description: 'No existe o no tiene productos activos',
+  })
+  findBySlug(@Param('slug') slug: string): Promise<BrandResponseDto> {
+    return this.brands.findBySlug(slug);
   }
 }

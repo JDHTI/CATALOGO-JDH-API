@@ -4,6 +4,7 @@ import {
   buildBrandManifest,
   isLogoFile,
   parseBrandLogoKey,
+  suggestCatalogSlug,
 } from './brand-media.layout';
 
 const url = (key: string) => `https://cdn.test/${key}`;
@@ -66,5 +67,41 @@ describe('buildBrandManifest', () => {
         },
       ],
     });
+  });
+
+  it('agrega `marca` solo a las entradas cuyo slug está en el catálogo', () => {
+    const manifest = buildBrandManifest(
+      [
+        { key: 'brands/alpina/logo-00000001.webp' },
+        { key: 'brands/nescafe-dolcegusto/logo-00000002.webp' },
+      ],
+      url,
+      new Date('2026-10-01T00:00:00Z'),
+      new Map([['alpina', { id: 4, slug: 'alpina', nombre: 'ALPINA' }]]),
+    );
+
+    expect(manifest.marcas).toEqual([
+      {
+        slug: 'alpina',
+        logo: 'https://cdn.test/brands/alpina/logo-00000001.webp',
+        marca: { id: 4, slug: 'alpina', nombre: 'ALPINA' },
+      },
+      {
+        slug: 'nescafe-dolcegusto',
+        logo: 'https://cdn.test/brands/nescafe-dolcegusto/logo-00000002.webp',
+      },
+    ]);
+    // Ausente, no null: así un consumidor viejo ve el mismo formato.
+    expect(manifest.marcas[1]).not.toHaveProperty('marca');
+  });
+});
+
+describe('suggestCatalogSlug', () => {
+  it('sugiere el slug que solo difiere en los guiones', () => {
+    const catalog = ['alpina', 'nescafe-dolce-gusto'];
+    expect(suggestCatalogSlug('nescafe-dolcegusto', catalog)).toBe(
+      'nescafe-dolce-gusto',
+    );
+    expect(suggestCatalogSlug('colombina', catalog)).toBeUndefined();
   });
 });

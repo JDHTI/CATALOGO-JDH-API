@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 
+import { PrismaService } from '@infrastructure/database';
 import { StorageService, type ListedObject } from '@infrastructure/storage';
 import { SiteImageProcessorService } from '@modules/site-images/site-image-processor.service';
 
@@ -12,6 +13,7 @@ import {
   buildBrandManifest,
   parseBrandLogoKey,
   type BrandManifest,
+  type BrandManifestMarca,
 } from './brand-media.layout';
 
 export type BrandLogoOutcome =
@@ -21,8 +23,8 @@ export type BrandLogoOutcome =
 /**
  * Logos de marca bajo `brands/{slug}/` en el bucket, más un
  * `brands/manifest.json` público que el frontend lee directo del CDN, sin
- * pasar por la API. No toca la BD: la marca es el nombre del archivo.
- * Ver docs/brand-media.md.
+ * pasar por la API. La marca es el nombre del archivo; la BD solo se lee
+ * para enlazar cada logo con su `Brand`. Ver docs/brand-media.md.
  *
  * Sin controlador HTTP a propósito, igual que `logos/` y `site-images/`: el
  * disparo es `pnpm brands:ingest`, solo local.
@@ -34,6 +36,7 @@ export class BrandMediaService {
   constructor(
     private readonly storage: StorageService,
     private readonly processor: SiteImageProcessorService,
+    private readonly prisma: PrismaService,
   ) {}
 
   listBrandObjects(): Promise<ListedObject[]> {
@@ -105,7 +108,11 @@ export class BrandMediaService {
       added: [],
       removed: [],
     },
-  ): Promise<{ manifest: BrandManifest; url: string }> {
+  ): Promise<{
+    manifest: BrandManifest;
+    url: string;
+    catalog: Map<string, BrandManifestMarca>;
+  }> {
     const removed = new Set(planned.removed);
     const now = new Date();
     const objects = [
@@ -117,10 +124,12 @@ export class BrandMediaService {
         : []),
     ];
 
+    const catalog = await this.loadCatalog();
     const manifest = buildBrandManifest(
       objects,
       (key) => this.storage.publicUrl(key),
       now,
+      catalog,
     );
 
     const url = this.storage.publicUrl(BRAND_MANIFEST_KEY);
@@ -140,6 +149,21 @@ export class BrandMediaService {
       );
     }
 
-    return { manifest, url };
+    return { manifest, url, catalog };
+  }
+
+  /**
+   * Marcas enlazables desde el manifiesto, por slug. Mismo criterio que
+   * `GET /brands/:slug`: sin productos activos ese endpoint da 404, así que
+   * el logo no se enlaza.
+   */
+  private async loadCatalog(): Promise<Map<string, BrandManifestMarca>> {
+    const brands = await this.prisma.brand.findMany({
+      where: { products: { some: { active: true } } },
+      select: { id: true, slug: true, name: true },
+    });
+    return new Map(
+      brands.map(({ id, slug, name }) => [slug, { id, slug, nombre: name }]),
+    );
   }
 }

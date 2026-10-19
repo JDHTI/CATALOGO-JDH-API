@@ -257,7 +257,15 @@ describe('CatalogPushService', () => {
             logoUrl: 'https://cdn/acme.webp',
           },
         ],
-        brand: [{ id: 20, name: 'MARCA', logoObjectKey: null, logoUrl: null }],
+        brand: [
+          {
+            id: 20,
+            name: 'MARCA',
+            slug: 'marca',
+            logoObjectKey: null,
+            logoUrl: null,
+          },
+        ],
         product: [buildProduct()],
         productImage: [
           {
@@ -310,6 +318,29 @@ describe('CatalogPushService', () => {
       expect(pushed.brandId).toBe(brand.id);
       expect(summary.products.inserted).toBe(1);
       expect(summary.suppliers.inserted).toBe(1);
+    });
+
+    it('copia el slug de marca tal cual y lo actualiza si cambió', async () => {
+      const remote = buildCatalog({
+        brand: [
+          {
+            id: 1,
+            name: 'MARCA',
+            slug: 'marca-viejo',
+            logoObjectKey: null,
+            logoUrl: null,
+          },
+        ],
+      });
+      const local = seedLocal();
+      local.product.rows[0].id = 1;
+
+      const summary = await buildService(local, remote).run();
+
+      expect(remote.brand.rows).toEqual([
+        expect.objectContaining({ id: 1, name: 'MARCA', slug: 'marca' }),
+      ]);
+      expect(summary.brands.updated).toBe(1);
     });
 
     it('arrastra el logo del proveedor y las imágenes del producto', async () => {
