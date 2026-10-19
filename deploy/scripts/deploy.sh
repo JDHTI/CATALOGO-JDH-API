@@ -18,8 +18,15 @@ COMPOSE=(docker compose -f deploy/compose.prod.yaml --env-file deploy/.env)
 
 set -a; . deploy/.env; set +a
 
-if [[ $AUTH_MICROSOFT_ENTRA_ID_ID == pendiente-* ]]; then
-  echo "Aviso: Entra ID sin configurar; el ingreso del personal JDH no funcionará." >&2
+if [[ $AUTH_MICROSOFT_ENTRA_ID_ID == pendiente-* || $AUTH_MICROSOFT_ENTRA_ID_SECRET == pendiente-* \
+  || $AUTH_MICROSOFT_ENTRA_ID_TENANT_ID == 00000000-* ]]; then
+  if [[ ${ALLOW_NO_ENTRA:-0} == 1 ]]; then
+    echo "Aviso: Entra ID sin configurar; el ingreso del personal JDH no funcionará." >&2
+  else
+    echo "Entra ID con valores de relleno en deploy/.env. Completar AUTH_MICROSOFT_ENTRA_ID_*" >&2
+    echo "o desplegar sin Entra con ALLOW_NO_ENTRA=1." >&2
+    exit 1
+  fi
 fi
 
 if docker ps --format '{{.Names}}' | grep -qx tienda-postgres; then
