@@ -64,6 +64,9 @@ model Manufacturer {
 model Brand {
   id            Int     @id @default(autoincrement())
   name          String  @unique
+  /// Identificador público para URLs (/marcas/{slug}). Lo asigna el sync con
+  /// la política de src/modules/brands/brand-slug.ts; ver docs/brands.md.
+  slug          String  @unique
   /// Logo comercial: key del objeto en el bucket y URL absoluta servible.
   /// El sync del DWH no los toca; se cargan aparte y quedan null hasta entonces.
   logoObjectKey String? @map("logo_object_key")

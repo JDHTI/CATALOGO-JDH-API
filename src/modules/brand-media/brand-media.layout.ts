@@ -7,8 +7,9 @@ import { LogosService } from '@modules/logos/logos.service';
  * se nombra el objeto y cómo se arma el manifiesto público. Sin dependencias
  * de S3 para poder probarlo aislado. Ver docs/brand-media.md.
  *
- * Las marcas se identifican SOLO por el nombre del archivo: no hay cruce con
- * proveedores ni con la tabla de marcas del catálogo.
+ * Las marcas se identifican por el nombre del archivo. El cruce con la tabla
+ * de marcas es solo informativo: si el slug coincide con un `Brand.slug`, la
+ * entrada lleva `marca` para que el frontend la enlace.
  */
 
 export const BRAND_MEDIA_PREFIX = 'brands/';
@@ -54,9 +55,18 @@ export function parseBrandLogoKey(key: string): string | null {
   return LOGO_KEY.exec(key)?.[1] ?? null;
 }
 
+/** Marca del catálogo (con productos activos) que corresponde al logo. */
+export interface BrandManifestMarca {
+  id: number;
+  slug: string;
+  nombre: string;
+}
+
 export interface BrandManifestEntry {
   slug: string;
   logo: string;
+  /** Ausente si el slug no coincide con ninguna marca con productos activos. */
+  marca?: BrandManifestMarca;
 }
 
 export interface BrandManifest {
@@ -76,11 +86,14 @@ export interface BucketObject {
  *
  * Si quedaran dos logos para la misma marca (una carga interrumpida antes de
  * borrar el anterior), gana el más reciente.
+ *
+ * `catalog` son las marcas enlazables por slug.
  */
 export function buildBrandManifest(
   objects: BucketObject[],
   publicUrl: (key: string) => string,
   generadoEn: Date,
+  catalog: ReadonlyMap<string, BrandManifestMarca> = new Map(),
 ): BrandManifest {
   const newest = new Map<string, BucketObject>();
   for (const object of objects) {
@@ -94,8 +107,30 @@ export function buildBrandManifest(
   }
 
   const marcas = [...newest.entries()]
-    .map(([slug, object]) => ({ slug, logo: publicUrl(object.key) }))
+    .map(([slug, object]): BrandManifestEntry => {
+      const marca = catalog.get(slug);
+      return {
+        slug,
+        logo: publicUrl(object.key),
+        ...(marca && { marca }),
+      };
+    })
     .sort((a, b) => a.slug.localeCompare(b.slug));
 
   return { version: 1, generadoEn: generadoEn.toISOString(), marcas };
+}
+
+/**
+ * Para el reporte de logos sin marca: slug del catálogo que solo difiere en
+ * los guiones (`nescafe-dolcegusto` → `nescafe-dolce-gusto`), si lo hay.
+ */
+export function suggestCatalogSlug(
+  slug: string,
+  catalogSlugs: Iterable<string>,
+): string | undefined {
+  const compact = slug.replace(/-/g, '');
+  for (const candidate of catalogSlugs) {
+    if (candidate.replace(/-/g, '') === compact) return candidate;
+  }
+  return undefined;
 }

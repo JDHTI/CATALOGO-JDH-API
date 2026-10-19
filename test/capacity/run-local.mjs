@@ -140,7 +140,7 @@ try {
   await pool.query(`
     INSERT INTO suppliers (code, name, updated_at)
     SELECT 'S' || n, 'Proveedor ' || n, now() FROM generate_series(1,20) n;
-    INSERT INTO brands (name) SELECT 'Marca ' || n FROM generate_series(1,40) n;
+    INSERT INTO brands (name, slug) SELECT 'Marca ' || n, 'marca-' || n FROM generate_series(1,40) n;
     INSERT INTO products (producto_key, sku, name, supplier_id, brand_id, active, synced_at, source_hash, updated_at, long_description)
     SELECT 'K' || n, 'SKU-' || n, 'Producto ' || lpad(n::text, 5, '0'),
       1 + n % 20, 1 + n % 40, true, now(), 'fixture', now(), repeat('Descripción de prueba. ', 12)

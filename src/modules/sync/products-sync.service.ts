@@ -4,7 +4,7 @@
 import { config as loadEnv } from 'dotenv';
 loadEnv({ path: ['.env.local', '.env'], quiet: true });
 
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import {
   Injectable,
@@ -23,6 +23,11 @@ import {
 } from '@infrastructure/config';
 import { PrismaService } from '@infrastructure/database';
 import { DatawarehouseService } from '@infrastructure/datawarehouse';
+import {
+  allocateBrandSlug,
+  brandSlugBase,
+  planBrandSlugs,
+} from '@modules/brands/brand-slug';
 import type { Prisma } from '@prisma-client';
 
 import type { DwhProductRow } from './dwh-product-row.interface';
@@ -209,6 +214,8 @@ export class ProductsSyncService implements OnModuleInit {
     this.logger.log(`Sincronización de productos iniciada (run #${run.id})`);
 
     try {
+      const reslugged = await this.reconcileBrandSlugs();
+
       for await (const batch of this.dwh.stream<DwhProductRow>(
         PRODUCTS_EXTRACT_SQL,
         [],
@@ -236,7 +243,8 @@ export class ProductsSyncService implements OnModuleInit {
         },
       });
 
-      const changes = counters.inserted + counters.updated + deactivated;
+      const changes =
+        counters.inserted + counters.updated + deactivated + reslugged;
       if (changes > 0) {
         // Las claves del HttpCacheInterceptor empiezan por "http:".
         await this.cache.invalidateByPrefix('http:');
@@ -379,18 +387,80 @@ export class ProductsSyncService implements OnModuleInit {
       const name = row[column]?.trim();
       if (!name || cache.has(name)) continue;
 
-      const args = {
-        where: { name },
-        create: { name },
-        update: {},
-        select: { id: true } as const,
-      };
-      const record =
+      const id =
         model === 'brand'
-          ? await this.prisma.brand.upsert(args)
-          : await this.prisma.manufacturer.upsert(args);
-      cache.set(name, record.id);
+          ? await this.findOrCreateBrand(name)
+          : (
+              await this.prisma.manufacturer.upsert({
+                where: { name },
+                create: { name },
+                update: {},
+                select: { id: true },
+              })
+            ).id;
+      cache.set(name, id);
     }
+  }
+
+  /**
+   * Marca por nombre; si es nueva, se crea con su slug. El slug puede
+   * depender del id (`{base}-{id}` en colisión), así que se crea con uno
+   * provisional y se fija en la misma transacción.
+   */
+  private async findOrCreateBrand(name: string): Promise<number> {
+    const existing = await this.prisma.brand.findUnique({
+      where: { name },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    return this.prisma.$transaction(async (tx) => {
+      const { id } = await tx.brand.create({
+        data: { name, slug: `~${randomUUID()}` },
+        select: { id: true },
+      });
+      const similar = await tx.brand.findMany({
+        where: { slug: { startsWith: brandSlugBase(name) } },
+        select: { slug: true },
+      });
+      await tx.brand.update({
+        where: { id },
+        data: {
+          slug: allocateBrandSlug(
+            { id, name },
+            new Set(similar.map((brand) => brand.slug)),
+          ),
+        },
+      });
+      return id;
+    });
+  }
+
+  /**
+   * Corrige los slugs que no corresponden al nombre de su marca (renombrada
+   * en BD, backfill de la migración distinto de la normalización JS, o una
+   * creación interrumpida). Devuelve cuántos cambió.
+   */
+  private async reconcileBrandSlugs(): Promise<number> {
+    const brands = await this.prisma.brand.findMany({
+      select: { id: true, name: true, slug: true },
+    });
+    const changes = planBrandSlugs(brands);
+    if (changes.length === 0) return 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      // Dos pasadas: un slug nuevo puede ser el viejo de otra fila del plan.
+      for (const { id } of changes) {
+        await tx.brand.update({ where: { id }, data: { slug: `~${id}` } });
+      }
+      for (const { id, slug } of changes) {
+        await tx.brand.update({ where: { id }, data: { slug } });
+      }
+    });
+    this.logger.warn(
+      `Slugs de marca corregidos: ${changes.map(({ id, slug }) => `#${id}→${slug}`).join(', ')}`,
+    );
+    return changes.length;
   }
 
   /**

@@ -5,6 +5,13 @@ export class BrandResponseDto {
   @ApiProperty({ example: 1 })
   id!: number;
 
+  @ApiProperty({
+    example: 'dewalt',
+    description:
+      'Identificador estable para URLs (/marcas/{slug}); coincide con el slug del manifiesto de logos',
+  })
+  slug!: string;
+
   @ApiProperty({ example: 'DEWALT' })
   nombre!: string;
 

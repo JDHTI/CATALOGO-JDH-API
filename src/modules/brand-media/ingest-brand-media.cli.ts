@@ -19,13 +19,17 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../../app.module';
-import { brandSlugFromFilename, isLogoFile } from './brand-media.layout';
+import {
+  brandSlugFromFilename,
+  isLogoFile,
+  suggestCatalogSlug,
+} from './brand-media.layout';
 import { BrandMediaService } from './brand-media.service';
 
 interface ReportRow {
   archivo: string;
   marca: string;
-  estado: 'ok' | 'omitido' | 'error' | 'eliminado';
+  estado: 'ok' | 'omitido' | 'error' | 'eliminado' | 'sin-marca';
   motivo: string;
   objectKey: string;
 }
@@ -204,8 +208,27 @@ async function main(): Promise<void> {
     const service = app.get(BrandMediaService);
     if (dir) await ingestFolder(service, resolve(dir), options, rows, planned);
 
-    const { manifest, url } = await service.publishManifest(dryRun, planned);
+    const { manifest, url, catalog } = await service.publishManifest(
+      dryRun,
+      planned,
+    );
     if (dryRun) manifestPreview = manifest;
+
+    // Todo el bucket, no solo esta entrega: es la lista de logos que la UI
+    // no puede enlazar hasta que operaciones renombre el archivo.
+    for (const entry of manifest.marcas) {
+      if (entry.marca) continue;
+      const sugerencia = suggestCatalogSlug(entry.slug, catalog.keys());
+      rows.push({
+        archivo: '',
+        marca: entry.slug,
+        estado: 'sin-marca',
+        motivo: sugerencia
+          ? `sin marca en catálogo; renombra el archivo a ${sugerencia}`
+          : 'sin marca en catálogo',
+        objectKey: '',
+      });
+    }
     logger.log(
       `${dryRun ? 'Manifiesto (vista previa)' : 'Manifiesto'}: ${manifest.marcas.length} marca(s) · ${url}`,
     );
@@ -213,16 +236,21 @@ async function main(): Promise<void> {
     await app.close();
   }
 
-  if (rows.length === 0 && !soloManifiesto) {
+  if (!soloManifiesto && rows.every((row) => row.estado === 'sin-marca')) {
     logger.warn(`No se encontraron logos en "${resolve(dir!)}"`);
   }
 
   const reportPath = await writeReports(rows, manifestPreview);
-  const counts = { ok: 0, omitido: 0, error: 0, eliminado: 0 };
+  const counts = { ok: 0, omitido: 0, error: 0, eliminado: 0, 'sin-marca': 0 };
   for (const row of rows) counts[row.estado]++;
   logger.log(
-    `Total: ${rows.length} · ok: ${counts.ok} · omitidos: ${counts.omitido} · errores: ${counts.error} · eliminados: ${counts.eliminado}`,
+    `Total: ${rows.length} · ok: ${counts.ok} · omitidos: ${counts.omitido} · errores: ${counts.error} · eliminados: ${counts.eliminado} · sin marca: ${counts['sin-marca']}`,
   );
+  if (counts['sin-marca'] > 0) {
+    logger.warn(
+      `${counts['sin-marca']} logo(s) sin marca en el catálogo: la UI no los enlaza. Revisa el CSV.`,
+    );
+  }
   logger.log(`Reporte: ${reportPath}`);
   if (counts.error > 0) {
     logger.warn(`Hay ${counts.error} archivo(s) con error. Revisa el CSV.`);

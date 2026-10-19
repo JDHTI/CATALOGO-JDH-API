@@ -380,7 +380,10 @@ export class CatalogPushService {
     return this.mapLocalToRemote(locals, (row) => remoteIdByCode.get(row.code));
   }
 
-  /** Marcas, por `name`. Arrastra el logo comercial si ya se cargó. */
+  /**
+   * Marcas, por `name`. Arrastra el logo comercial si ya se cargó y el slug
+   * tal cual: el remoto es espejo del local, no recalcula slugs.
+   */
   private async pushBrands(
     remote: PrismaClient,
     counters: EntityCounters,
@@ -389,6 +392,7 @@ export class CatalogPushService {
       select: {
         id: true,
         name: true,
+        slug: true,
         logoObjectKey: true,
         logoUrl: true,
       },
@@ -397,19 +401,28 @@ export class CatalogPushService {
     counters.read = locals.length;
 
     const remotes = await remote.brand.findMany({
-      select: { id: true, name: true, logoObjectKey: true, logoUrl: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logoObjectKey: true,
+        logoUrl: true,
+      },
     });
     const byName = new Map(remotes.map((row) => [row.name, row]));
 
     const toCreate: {
       name: string;
+      slug: string;
       logoObjectKey: string | null;
       logoUrl: string | null;
     }[] = [];
+    const toUpdate: { id: number; data: (typeof toCreate)[number] }[] = [];
 
     for (const local of locals) {
       const data = {
         name: local.name,
+        slug: local.slug,
         logoObjectKey: local.logoObjectKey,
         logoUrl: local.logoUrl,
       };
@@ -419,16 +432,28 @@ export class CatalogPushService {
         toCreate.push(data);
         counters.inserted += 1;
       } else if (
+        existing.slug === data.slug &&
         existing.logoObjectKey === data.logoObjectKey &&
         existing.logoUrl === data.logoUrl
       ) {
         counters.unchanged += 1;
       } else {
-        await remote.brand.update({ where: { id: existing.id }, data });
+        if (existing.slug !== data.slug) {
+          // El slug nuevo puede ser el viejo de otra marca del lote: se
+          // libera antes para no chocar con el índice único.
+          await remote.brand.update({
+            where: { id: existing.id },
+            data: { slug: `~${existing.id}` },
+          });
+        }
+        toUpdate.push({ id: existing.id, data });
         counters.updated += 1;
       }
     }
 
+    for (const { id, data } of toUpdate) {
+      await remote.brand.update({ where: { id }, data });
+    }
     if (toCreate.length > 0) {
       await remote.brand.createMany({ data: toCreate, skipDuplicates: true });
     }

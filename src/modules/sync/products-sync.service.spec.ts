@@ -41,8 +41,14 @@ const buildRow = (
 interface PrismaMock {
   syncRun: { create: jest.Mock; update: jest.Mock };
   supplier: { upsert: jest.Mock };
-  brand: { upsert: jest.Mock };
+  brand: {
+    findUnique: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
   manufacturer: { upsert: jest.Mock };
+  $transaction: jest.Mock;
   product: {
     findMany: jest.Mock;
     createMany: jest.Mock;
@@ -61,21 +67,39 @@ const createdData = (
   return calls[0][0].data;
 };
 
-const buildPrisma = (): PrismaMock => ({
-  syncRun: {
-    create: jest.fn().mockResolvedValue({ id: 7 }),
-    update: jest.fn().mockResolvedValue({}),
-  },
-  supplier: { upsert: jest.fn().mockResolvedValue({ id: 1 }) },
-  brand: { upsert: jest.fn().mockResolvedValue({ id: 2 }) },
-  manufacturer: { upsert: jest.fn().mockResolvedValue({ id: 3 }) },
-  product: {
-    findMany: jest.fn().mockResolvedValue([]),
-    createMany: jest.fn().mockResolvedValue({ count: 0 }),
-    update: jest.fn().mockResolvedValue({}),
-    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-  },
-});
+const buildPrisma = (): PrismaMock => {
+  const prisma: PrismaMock = {
+    syncRun: {
+      create: jest.fn().mockResolvedValue({ id: 7 }),
+      update: jest.fn().mockResolvedValue({}),
+    },
+    supplier: { upsert: jest.fn().mockResolvedValue({ id: 1 }) },
+    brand: {
+      findUnique: jest.fn().mockResolvedValue({ id: 2 }),
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({ id: 2 }),
+      update: jest.fn().mockResolvedValue({}),
+    },
+    manufacturer: { upsert: jest.fn().mockResolvedValue({ id: 3 }) },
+    product: {
+      findMany: jest.fn().mockResolvedValue([]),
+      createMany: jest.fn().mockResolvedValue({ count: 0 }),
+      update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
+    $transaction: jest.fn(),
+  };
+  prisma.$transaction.mockImplementation(
+    (fn: (tx: PrismaMock) => Promise<unknown>) => fn(prisma),
+  );
+  return prisma;
+};
+
+/** Slugs finales que el servicio fijó con `brand.update`, en orden. */
+const brandSlugUpdates = (update: jest.Mock): [number, string][] =>
+  (
+    update.mock.calls as [{ where: { id: number }; data: { slug: string } }][]
+  ).map(([{ where, data }]) => [where.id, data.slug]);
 
 const buildService = (
   rows: DwhProductRow[],
@@ -257,6 +281,60 @@ describe('ProductsSyncService', () => {
     const updateManyCalls = prisma.product.updateMany.mock
       .calls as unknown as Array<[{ data: Record<string, unknown> }]>;
     expect(updateManyCalls[0][0].data).toEqual({ active: false });
+  });
+
+  it('crea la marca nueva con su slug, y con `{base}-{id}` si la base está tomada', async () => {
+    const prisma = buildPrisma();
+    prisma.brand.findUnique.mockResolvedValue(null);
+    prisma.brand.create.mockResolvedValue({ id: 40 });
+    prisma.brand.findMany
+      .mockResolvedValueOnce([]) // reconciliación inicial
+      .mockResolvedValueOnce([{ slug: 'nescafe-dolce-gusto' }]);
+    const { service } = buildService(
+      [buildRow('k1', { marca: 'Nescafé Dolce-Gusto' })],
+      prisma,
+    );
+
+    await service.run();
+
+    const createArgs = (
+      prisma.brand.create.mock.calls as [{ data: { name: string } }][]
+    )[0][0];
+    expect(createArgs.data.name).toBe('Nescafé Dolce-Gusto');
+    expect(brandSlugUpdates(prisma.brand.update)).toEqual([
+      [40, 'nescafe-dolce-gusto-40'],
+    ]);
+  });
+
+  it('no recrea marcas que ya existen', async () => {
+    const prisma = buildPrisma();
+    const { service } = buildService([buildRow('k1')], prisma);
+
+    await service.run();
+
+    expect(prisma.brand.create).not.toHaveBeenCalled();
+  });
+
+  it('corrige los slugs que no corresponden al nombre e invalida la caché', async () => {
+    const prisma = buildPrisma();
+    prisma.brand.findMany.mockResolvedValueOnce([
+      { id: 1, name: 'ACME', slug: 'acme' },
+      // Le tocaría la base, pero ya la tiene la marca 1.
+      { id: 2, name: 'Acme.', slug: '~interrumpida' },
+      // Renombrada en BD.
+      { id: 3, name: 'DOÑA PEPA', slug: 'pepa' },
+    ]);
+    const { service, invalidateByPrefix } = buildService([], prisma);
+
+    await service.run();
+
+    expect(brandSlugUpdates(prisma.brand.update)).toEqual([
+      [2, '~2'],
+      [3, '~3'],
+      [2, 'acme-2'],
+      [3, 'dona-pepa'],
+    ]);
+    expect(invalidateByPrefix).toHaveBeenCalledWith('http:');
   });
 
   it('marca el SyncRun como error si la extracción falla', async () => {
