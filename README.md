@@ -6,6 +6,7 @@ API NestJS con PostgreSQL/Prisma, caché Redis y almacenamiento S3/MinIO.
 - [Infraestructura y despliegue](docs/infrastructure.md)
 - [Producción en `tienda.jdh.local`](deploy/README.md): stack Docker Compose + Caddy de la API y la UI, CI/CD con runner self-hosted
 - [Favoritos](docs/favoritos.md) y [listas de pedido](docs/order-lists.md)
+- [Categorización de productos](docs/categorization.md): tabla independiente del sync, clasificación automática y API de categorías
 - Prueba aislada de capacidad: `pnpm test:capacity` (requiere Docker y build actualizado).
 
 <p align="center">

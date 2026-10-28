@@ -1,0 +1,1664 @@
+{
+  "version": "v3",
+  "categories": [
+    {
+      "name": "Alimentos",
+      "sortOrder": 0,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Salsas, condimentos y bases",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G001",
+              "name": "Salsas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G002",
+              "name": "Condimentos y especias",
+              "sortOrder": 1
+            },
+            {
+              "code": "G003",
+              "name": "Cremas, caldos y sopas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G004",
+              "name": "Sal",
+              "sortOrder": 3
+            },
+            {
+              "code": "G005",
+              "name": "Vinagres y vinagretas",
+              "sortOrder": 4
+            },
+            {
+              "code": "G006",
+              "name": "Aderezos",
+              "sortOrder": 5
+            }
+          ]
+        },
+        {
+          "name": "Snacks, galletas y confitería",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G007",
+              "name": "Confitería y golosinas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G008",
+              "name": "Snacks y fritos",
+              "sortOrder": 1
+            },
+            {
+              "code": "G009",
+              "name": "Galletas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G010",
+              "name": "Chocolates y chocolatinas",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Conservas y enlatados",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G011",
+              "name": "Vegetales en conserva",
+              "sortOrder": 0
+            },
+            {
+              "code": "G012",
+              "name": "Frutas en conserva",
+              "sortOrder": 1
+            },
+            {
+              "code": "G013",
+              "name": "Atún y sardinas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G014",
+              "name": "Mermeladas y bocadillos",
+              "sortOrder": 3
+            },
+            {
+              "code": "G015",
+              "name": "Conservas y enlatados varios",
+              "sortOrder": 4
+            },
+            {
+              "code": "G016",
+              "name": "Granos enlatados",
+              "sortOrder": 5
+            },
+            {
+              "code": "G017",
+              "name": "Crema y leche de coco",
+              "sortOrder": 6
+            },
+            {
+              "code": "G018",
+              "name": "Enlatados cárnicos",
+              "sortOrder": 7
+            }
+          ]
+        },
+        {
+          "name": "Lácteos y huevos",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G019",
+              "name": "Quesos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G020",
+              "name": "Leche líquida",
+              "sortOrder": 1
+            },
+            {
+              "code": "G021",
+              "name": "Lácteos varios",
+              "sortOrder": 2
+            },
+            {
+              "code": "G022",
+              "name": "Leche condensada y arequipe",
+              "sortOrder": 3
+            },
+            {
+              "code": "G023",
+              "name": "Yogures y bebidas lácteas",
+              "sortOrder": 4
+            },
+            {
+              "code": "G024",
+              "name": "Cremas de leche",
+              "sortOrder": 5
+            },
+            {
+              "code": "G025",
+              "name": "Mantequilla",
+              "sortOrder": 6
+            },
+            {
+              "code": "G026",
+              "name": "Leche en polvo",
+              "sortOrder": 7
+            },
+            {
+              "code": "G027",
+              "name": "Huevos",
+              "sortOrder": 8
+            },
+            {
+              "code": "G028",
+              "name": "Lácteos vegetales",
+              "sortOrder": 9
+            }
+          ]
+        },
+        {
+          "name": "Café, chocolate e infusiones",
+          "sortOrder": 4,
+          "groups": [
+            {
+              "code": "G029",
+              "name": "Té e infusiones",
+              "sortOrder": 0
+            },
+            {
+              "code": "G030",
+              "name": "Café",
+              "sortOrder": 1
+            },
+            {
+              "code": "G031",
+              "name": "Bebidas calientes instantáneas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G032",
+              "name": "Chocolate de mesa",
+              "sortOrder": 3
+            },
+            {
+              "code": "G033",
+              "name": "Chocolate en polvo",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Granos, arroz y cereales",
+          "sortOrder": 5,
+          "groups": [
+            {
+              "code": "G034",
+              "name": "Granos y legumbres",
+              "sortOrder": 0
+            },
+            {
+              "code": "G035",
+              "name": "Cereales y granolas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G036",
+              "name": "Arroz",
+              "sortOrder": 2
+            },
+            {
+              "code": "G037",
+              "name": "Avenas",
+              "sortOrder": 3
+            },
+            {
+              "code": "G038",
+              "name": "Semillas",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Panadería y repostería",
+          "sortOrder": 6,
+          "groups": [
+            {
+              "code": "G039",
+              "name": "Insumos de panadería",
+              "sortOrder": 0
+            },
+            {
+              "code": "G040",
+              "name": "Panes, pasteles y ponqués",
+              "sortOrder": 1
+            },
+            {
+              "code": "G041",
+              "name": "Coberturas y chocolates de repostería",
+              "sortOrder": 2
+            },
+            {
+              "code": "G042",
+              "name": "Cremas y rellenos de repostería",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Frutas, verduras y tubérculos",
+          "sortOrder": 7,
+          "groups": [
+            {
+              "code": "G043",
+              "name": "Verduras y hortalizas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G044",
+              "name": "Frutas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G045",
+              "name": "Pulpas de fruta",
+              "sortOrder": 2
+            },
+            {
+              "code": "G046",
+              "name": "Hierbas y aromáticas frescas",
+              "sortOrder": 3
+            },
+            {
+              "code": "G047",
+              "name": "Tubérculos y papas",
+              "sortOrder": 4
+            },
+            {
+              "code": "G048",
+              "name": "Verduras congeladas",
+              "sortOrder": 5
+            }
+          ]
+        },
+        {
+          "name": "Aceites y grasas",
+          "sortOrder": 8,
+          "groups": [
+            {
+              "code": "G049",
+              "name": "Aceites líquidos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G050",
+              "name": "Margarinas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G051",
+              "name": "Aceites sólidos y mantecas",
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Pastas y harinas",
+          "sortOrder": 9,
+          "groups": [
+            {
+              "code": "G052",
+              "name": "Premezclas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G053",
+              "name": "Harinas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G054",
+              "name": "Pastas",
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Masas, tortillas y precocidos",
+          "sortOrder": 10,
+          "groups": [
+            {
+              "code": "G055",
+              "name": "Papas prefritas y croquetas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G056",
+              "name": "Alimentos precocidos",
+              "sortOrder": 1
+            },
+            {
+              "code": "G057",
+              "name": "Tortillas y arepas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G058",
+              "name": "Apanados y batidos",
+              "sortOrder": 3
+            },
+            {
+              "code": "G059",
+              "name": "Masas",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Gelatinas, refrescos en polvo y postres",
+          "sortOrder": 11,
+          "groups": [
+            {
+              "code": "G060",
+              "name": "Refrescos en polvo",
+              "sortOrder": 0
+            },
+            {
+              "code": "G061",
+              "name": "Gelatinas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G062",
+              "name": "Flanes y postres",
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Bebidas",
+          "sortOrder": 12,
+          "groups": [
+            {
+              "code": "G063",
+              "name": "Jugos y néctares",
+              "sortOrder": 0
+            },
+            {
+              "code": "G064",
+              "name": "Bebidas varias",
+              "sortOrder": 1
+            },
+            {
+              "code": "G065",
+              "name": "Agua",
+              "sortOrder": 2
+            },
+            {
+              "code": "G066",
+              "name": "Bebidas vegetales",
+              "sortOrder": 3
+            },
+            {
+              "code": "G067",
+              "name": "Gaseosas",
+              "sortOrder": 4
+            },
+            {
+              "code": "G068",
+              "name": "Bebidas energizantes",
+              "sortOrder": 5
+            },
+            {
+              "code": "G069",
+              "name": "Mezclas para bebidas",
+              "sortOrder": 6
+            }
+          ]
+        },
+        {
+          "name": "Azúcar y endulzantes",
+          "sortOrder": 13,
+          "groups": [
+            {
+              "code": "G070",
+              "name": "Azúcar",
+              "sortOrder": 0
+            },
+            {
+              "code": "G071",
+              "name": "Endulzantes",
+              "sortOrder": 1
+            },
+            {
+              "code": "G072",
+              "name": "Panela",
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Frutos secos y deshidratados",
+          "sortOrder": 14,
+          "groups": [
+            {
+              "code": "G073",
+              "name": "Frutos secos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G074",
+              "name": "Deshidratados",
+              "sortOrder": 1
+            }
+          ]
+        },
+        {
+          "name": "Siropes, extractos y saborizantes",
+          "sortOrder": 15,
+          "groups": [
+            {
+              "code": "G075",
+              "name": "Siropes",
+              "sortOrder": 0
+            },
+            {
+              "code": "G076",
+              "name": "Extractos y esencias",
+              "sortOrder": 1
+            }
+          ]
+        },
+        {
+          "name": "Helados y postres congelados",
+          "sortOrder": 16,
+          "groups": [
+            {
+              "code": "G077",
+              "name": "Helados y paletas",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Otros alimentos",
+          "sortOrder": 17,
+          "groups": [
+            {
+              "code": "G078",
+              "name": "Promociones y combos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G079",
+              "name": "Suplementos",
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Proteínas",
+      "sortOrder": 1,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Pollo y aves",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G080",
+              "name": "Pollo",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Carnes de res, cerdo y otras",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G081",
+              "name": "Carnes de res, cerdo y otras",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Embutidos y carnes frías",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G082",
+              "name": "Embutidos y carnes frías",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Pescados y mariscos",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G083",
+              "name": "Pescados y mariscos",
+              "sortOrder": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Aseo y limpieza",
+      "sortOrder": 2,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Carros y contenedores de residuos",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G084",
+              "name": "Contenedores y canecas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G085",
+              "name": "Papeleras",
+              "sortOrder": 1
+            },
+            {
+              "code": "G086",
+              "name": "Tapas de contenedor",
+              "sortOrder": 2
+            },
+            {
+              "code": "G087",
+              "name": "Carros de aseo",
+              "sortOrder": 3
+            },
+            {
+              "code": "G088",
+              "name": "Baldes",
+              "sortOrder": 4
+            },
+            {
+              "code": "G089",
+              "name": "Accesorios de carros de aseo",
+              "sortOrder": 5
+            },
+            {
+              "code": "G090",
+              "name": "Puntos ecológicos",
+              "sortOrder": 6
+            },
+            {
+              "code": "G091",
+              "name": "Señalización",
+              "sortOrder": 7
+            },
+            {
+              "code": "G092",
+              "name": "Plataformas",
+              "sortOrder": 8
+            }
+          ]
+        },
+        {
+          "name": "Accesorios de aseo",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G093",
+              "name": "Traperos, cepillos y escobas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G094",
+              "name": "Utensilios de aseo",
+              "sortOrder": 1
+            },
+            {
+              "code": "G095",
+              "name": "Paños, mopas y microfibra",
+              "sortOrder": 2
+            },
+            {
+              "code": "G096",
+              "name": "Esponjas y abrasivos",
+              "sortOrder": 3
+            },
+            {
+              "code": "G097",
+              "name": "Guantes de aseo",
+              "sortOrder": 4
+            },
+            {
+              "code": "G098",
+              "name": "Kits de aseo",
+              "sortOrder": 5
+            }
+          ]
+        },
+        {
+          "name": "Detergentes y lavandería",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G099",
+              "name": "Detergente líquido",
+              "sortOrder": 0
+            },
+            {
+              "code": "G100",
+              "name": "Lavaplatos y lavavajillas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G101",
+              "name": "Detergente en polvo",
+              "sortOrder": 2
+            },
+            {
+              "code": "G102",
+              "name": "Suavizantes",
+              "sortOrder": 3
+            },
+            {
+              "code": "G103",
+              "name": "Jabón en barra para ropa",
+              "sortOrder": 4
+            },
+            {
+              "code": "G104",
+              "name": "Detergente en tabletas",
+              "sortOrder": 5
+            }
+          ]
+        },
+        {
+          "name": "Químicos de limpieza",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G105",
+              "name": "Limpiadores y desinfectantes",
+              "sortOrder": 0
+            },
+            {
+              "code": "G106",
+              "name": "Desengrasantes",
+              "sortOrder": 1
+            },
+            {
+              "code": "G107",
+              "name": "Hipoclorito y blanqueadores",
+              "sortOrder": 2
+            },
+            {
+              "code": "G108",
+              "name": "Limpiapisos y ceras",
+              "sortOrder": 3
+            },
+            {
+              "code": "G109",
+              "name": "Limpiavidrios",
+              "sortOrder": 4
+            },
+            {
+              "code": "G110",
+              "name": "Desmanchadores",
+              "sortOrder": 5
+            },
+            {
+              "code": "G111",
+              "name": "Desincrustantes y removedores",
+              "sortOrder": 6
+            },
+            {
+              "code": "G112",
+              "name": "Químicos para piscina",
+              "sortOrder": 7
+            }
+          ]
+        },
+        {
+          "name": "Bolsas de basura",
+          "sortOrder": 4,
+          "groups": [
+            {
+              "code": "G113",
+              "name": "Bolsas de basura",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Papel higiénico y toallas",
+          "sortOrder": 5,
+          "groups": [
+            {
+              "code": "G114",
+              "name": "Papel higiénico",
+              "sortOrder": 0
+            },
+            {
+              "code": "G115",
+              "name": "Toallas de mano",
+              "sortOrder": 1
+            },
+            {
+              "code": "G116",
+              "name": "Dispensadores",
+              "sortOrder": 2
+            },
+            {
+              "code": "G117",
+              "name": "Limpiones",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Ambientadores e insecticidas",
+          "sortOrder": 6,
+          "groups": [
+            {
+              "code": "G118",
+              "name": "Ambientadores",
+              "sortOrder": 0
+            },
+            {
+              "code": "G119",
+              "name": "Insecticidas",
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cuidado personal",
+      "sortOrder": 3,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Cuidado corporal y capilar",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G120",
+              "name": "Shampoo y acondicionador",
+              "sortOrder": 0
+            },
+            {
+              "code": "G121",
+              "name": "Aseo personal (varios)",
+              "sortOrder": 1
+            },
+            {
+              "code": "G122",
+              "name": "Desodorantes",
+              "sortOrder": 2
+            },
+            {
+              "code": "G123",
+              "name": "Cremas de manos y cuerpo",
+              "sortOrder": 3
+            },
+            {
+              "code": "G124",
+              "name": "Afeitado",
+              "sortOrder": 4
+            },
+            {
+              "code": "G125",
+              "name": "Productos de peinado",
+              "sortOrder": 5
+            },
+            {
+              "code": "G126",
+              "name": "Repelentes",
+              "sortOrder": 6
+            }
+          ]
+        },
+        {
+          "name": "Jabones y gel antibacterial",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G127",
+              "name": "Jabón líquido de manos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G128",
+              "name": "Jabón de barra",
+              "sortOrder": 1
+            },
+            {
+              "code": "G129",
+              "name": "Gel antibacterial",
+              "sortOrder": 2
+            },
+            {
+              "code": "G130",
+              "name": "Jabón corporal",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Higiene íntima y desechables personales",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G131",
+              "name": "Protectores y toallas higiénicas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G132",
+              "name": "Pañitos y pañuelos",
+              "sortOrder": 1
+            },
+            {
+              "code": "G133",
+              "name": "Pañales",
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Higiene oral",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G134",
+              "name": "Cremas dentales y enjuagues",
+              "sortOrder": 0
+            },
+            {
+              "code": "G135",
+              "name": "Enjuague bucal",
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Menaje",
+      "sortOrder": 4,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Vajilla",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G136",
+              "name": "Platos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G137",
+              "name": "Bowls, bouillon y cazuelas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G138",
+              "name": "Tazas, mugs y pocillos",
+              "sortOrder": 2
+            },
+            {
+              "code": "G139",
+              "name": "Salseras, cremeras y saleros",
+              "sortOrder": 3
+            },
+            {
+              "code": "G140",
+              "name": "Platos y piezas de loza",
+              "sortOrder": 4
+            },
+            {
+              "code": "G141",
+              "name": "Ensaladeras y fruteros",
+              "sortOrder": 5
+            },
+            {
+              "code": "G142",
+              "name": "Sets y vajillas completas",
+              "sortOrder": 6
+            }
+          ]
+        },
+        {
+          "name": "Utensilios de cocina",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G143",
+              "name": "Recipientes y organizadores",
+              "sortOrder": 0
+            },
+            {
+              "code": "G144",
+              "name": "Utensilios de preparación",
+              "sortOrder": 1
+            },
+            {
+              "code": "G145",
+              "name": "Otros utensilios de cocina",
+              "sortOrder": 2
+            },
+            {
+              "code": "G146",
+              "name": "Bandejas y moldes",
+              "sortOrder": 3
+            },
+            {
+              "code": "G147",
+              "name": "Ollas, sartenes y cacerolas",
+              "sortOrder": 4
+            },
+            {
+              "code": "G148",
+              "name": "Cuchillos y tablas",
+              "sortOrder": 5
+            },
+            {
+              "code": "G149",
+              "name": "Tapas",
+              "sortOrder": 6
+            }
+          ]
+        },
+        {
+          "name": "Cristalería",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G150",
+              "name": "Vasos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G151",
+              "name": "Copas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G152",
+              "name": "Jarras",
+              "sortOrder": 2
+            },
+            {
+              "code": "G153",
+              "name": "Cristalería varia",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Cubertería",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G154",
+              "name": "Cubertería surtida",
+              "sortOrder": 0
+            },
+            {
+              "code": "G155",
+              "name": "Cuchillos",
+              "sortOrder": 1
+            },
+            {
+              "code": "G156",
+              "name": "Tenedores",
+              "sortOrder": 2
+            },
+            {
+              "code": "G157",
+              "name": "Cucharas",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Complementos de mesa y bar",
+          "sortOrder": 4,
+          "groups": [
+            {
+              "code": "G158",
+              "name": "Complementos de mesa",
+              "sortOrder": 0
+            },
+            {
+              "code": "G159",
+              "name": "Complementos de bar",
+              "sortOrder": 1
+            },
+            {
+              "code": "G160",
+              "name": "Dispensadores de bebidas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G161",
+              "name": "Ponchera",
+              "sortOrder": 3
+            },
+            {
+              "code": "G162",
+              "name": "Hieleras",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Equipos y electrodomésticos",
+          "sortOrder": 5,
+          "groups": [
+            {
+              "code": "G163",
+              "name": "Cafeteras",
+              "sortOrder": 0
+            },
+            {
+              "code": "G164",
+              "name": "Electrodomésticos",
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Empaques y desechables",
+      "sortOrder": 5,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Vasos, platos y cubiertos desechables",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G165",
+              "name": "Vasos desechables",
+              "sortOrder": 0
+            },
+            {
+              "code": "G166",
+              "name": "Pitillos y mezcladores",
+              "sortOrder": 1
+            },
+            {
+              "code": "G167",
+              "name": "Cubiertos desechables",
+              "sortOrder": 2
+            },
+            {
+              "code": "G168",
+              "name": "Platos desechables",
+              "sortOrder": 3
+            },
+            {
+              "code": "G169",
+              "name": "Copas desechables",
+              "sortOrder": 4
+            },
+            {
+              "code": "G170",
+              "name": "Pinchos y palillos",
+              "sortOrder": 5
+            }
+          ]
+        },
+        {
+          "name": "Contenedores y envases desechables",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G171",
+              "name": "Contenedores y portacomidas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G172",
+              "name": "Tapas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G173",
+              "name": "Bandejas desechables",
+              "sortOrder": 2
+            },
+            {
+              "code": "G174",
+              "name": "Bases para contenedores",
+              "sortOrder": 3
+            },
+            {
+              "code": "G175",
+              "name": "Desechables varios",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Servilletas y papel de mesa",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G176",
+              "name": "Servilletas",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Bolsas y empaques flexibles",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G177",
+              "name": "Papel aluminio y películas",
+              "sortOrder": 0
+            },
+            {
+              "code": "G178",
+              "name": "Bolsas de empaque",
+              "sortOrder": 1
+            },
+            {
+              "code": "G179",
+              "name": "Bolsas de papel",
+              "sortOrder": 2
+            },
+            {
+              "code": "G180",
+              "name": "Estrapack y film",
+              "sortOrder": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Licores y tabaco",
+      "sortOrder": 6,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Vinos",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G181",
+              "name": "Vinos tintos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G182",
+              "name": "Vinos blancos y rosados",
+              "sortOrder": 1
+            },
+            {
+              "code": "G183",
+              "name": "Vinos varios",
+              "sortOrder": 2
+            },
+            {
+              "code": "G184",
+              "name": "Vinos de cocina",
+              "sortOrder": 3
+            },
+            {
+              "code": "G185",
+              "name": "Vinos aperitivos",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Mezcladores y cocteles",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G186",
+              "name": "Sodas y mezcladores",
+              "sortOrder": 0
+            },
+            {
+              "code": "G187",
+              "name": "Cocteles",
+              "sortOrder": 1
+            },
+            {
+              "code": "G188",
+              "name": "Bases para coctel",
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Licores destilados",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G189",
+              "name": "Cremas, aperitivos y otros licores",
+              "sortOrder": 0
+            },
+            {
+              "code": "G190",
+              "name": "Ron",
+              "sortOrder": 1
+            },
+            {
+              "code": "G191",
+              "name": "Aguardiente",
+              "sortOrder": 2
+            },
+            {
+              "code": "G192",
+              "name": "Tequila y mezcal",
+              "sortOrder": 3
+            },
+            {
+              "code": "G193",
+              "name": "Ginebra",
+              "sortOrder": 4
+            },
+            {
+              "code": "G194",
+              "name": "Whisky",
+              "sortOrder": 5
+            },
+            {
+              "code": "G195",
+              "name": "Brandy y coñac",
+              "sortOrder": 6
+            },
+            {
+              "code": "G196",
+              "name": "Vodka",
+              "sortOrder": 7
+            }
+          ]
+        },
+        {
+          "name": "Tabaco",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G197",
+              "name": "Cigarrillos electrónicos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G198",
+              "name": "Cigarrillos",
+              "sortOrder": 1
+            }
+          ]
+        },
+        {
+          "name": "Cerveza",
+          "sortOrder": 4,
+          "groups": [
+            {
+              "code": "G199",
+              "name": "Cerveza",
+              "sortOrder": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Papelería y oficina",
+      "sortOrder": 7,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Útiles de oficina varios",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G200",
+              "name": "Útiles de oficina varios",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Escritura y marcadores",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G201",
+              "name": "Escritura y marcadores",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Papel y cuadernos",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G202",
+              "name": "Papel, sobres y cuadernos",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Archivo y organización",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G203",
+              "name": "Archivo y organización",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Cintas y adhesivos",
+          "sortOrder": 4,
+          "groups": [
+            {
+              "code": "G204",
+              "name": "Cintas y adhesivos",
+              "sortOrder": 0
+            }
+          ]
+        },
+        {
+          "name": "Tintas y consumibles de impresión",
+          "sortOrder": 5,
+          "groups": [
+            {
+              "code": "G205",
+              "name": "Tintas y tóner",
+              "sortOrder": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Industrial",
+      "sortOrder": 8,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Almacenamiento y mobiliario",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G206",
+              "name": "Cajas y organizadores",
+              "sortOrder": 0
+            },
+            {
+              "code": "G207",
+              "name": "Módulos de almacenamiento",
+              "sortOrder": 1
+            },
+            {
+              "code": "G208",
+              "name": "Neveras y hieleras",
+              "sortOrder": 2
+            },
+            {
+              "code": "G209",
+              "name": "Sillas y mobiliario",
+              "sortOrder": 3
+            },
+            {
+              "code": "G210",
+              "name": "Lockers y cajoneras",
+              "sortOrder": 4
+            },
+            {
+              "code": "G211",
+              "name": "Estibas",
+              "sortOrder": 5
+            }
+          ]
+        },
+        {
+          "name": "Seguridad industrial",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G212",
+              "name": "Guantes de seguridad",
+              "sortOrder": 0
+            },
+            {
+              "code": "G213",
+              "name": "Protección personal",
+              "sortOrder": 1
+            },
+            {
+              "code": "G214",
+              "name": "Tapetes y cubrepisos",
+              "sortOrder": 2
+            },
+            {
+              "code": "G215",
+              "name": "Señalización y conos",
+              "sortOrder": 3
+            },
+            {
+              "code": "G216",
+              "name": "Botiquines y primeros auxilios",
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Ferretería y repuestos",
+          "sortOrder": 2,
+          "groups": [
+            {
+              "code": "G217",
+              "name": "Repuestos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G218",
+              "name": "Ferretería",
+              "sortOrder": 1
+            },
+            {
+              "code": "G219",
+              "name": "Herramientas",
+              "sortOrder": 2
+            },
+            {
+              "code": "G220",
+              "name": "Iluminación y eléctricos",
+              "sortOrder": 3
+            },
+            {
+              "code": "G221",
+              "name": "Instrumentos de medición",
+              "sortOrder": 4
+            },
+            {
+              "code": "G222",
+              "name": "Adhesivos y sellantes",
+              "sortOrder": 5
+            },
+            {
+              "code": "G223",
+              "name": "Lubricantes y limpiametales",
+              "sortOrder": 6
+            }
+          ]
+        },
+        {
+          "name": "Pilas, encendedores y velas",
+          "sortOrder": 3,
+          "groups": [
+            {
+              "code": "G224",
+              "name": "Encendedores y fósforos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G225",
+              "name": "Pilas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G226",
+              "name": "Velas",
+              "sortOrder": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mascotas",
+      "sortOrder": 9,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Alimento para mascotas",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G227",
+              "name": "Snacks y premios para perros",
+              "sortOrder": 0
+            },
+            {
+              "code": "G228",
+              "name": "Snacks y premios para gatos",
+              "sortOrder": 1
+            },
+            {
+              "code": "G229",
+              "name": "Alimento para adultos",
+              "sortOrder": 2
+            },
+            {
+              "code": "G230",
+              "name": "Alimento para cachorros",
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Accesorios y aseo para mascotas",
+          "sortOrder": 1,
+          "groups": [
+            {
+              "code": "G231",
+              "name": "Arena para gatos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G232",
+              "name": "Aseo para mascotas",
+              "sortOrder": 1
+            },
+            {
+              "code": "G233",
+              "name": "Juguetes",
+              "sortOrder": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Farmacéuticos",
+      "sortOrder": 10,
+      "active": true,
+      "subcategories": [
+        {
+          "name": "Antisépticos y primeros auxilios",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G234",
+              "name": "Otros farmacéuticos",
+              "sortOrder": 0
+            },
+            {
+              "code": "G235",
+              "name": "Alcohol y antisépticos",
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Servicios",
+      "sortOrder": 11,
+      "active": false,
+      "subcategories": [
+        {
+          "name": "Servicios",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G236",
+              "name": "Servicios",
+              "sortOrder": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Otros",
+      "sortOrder": 12,
+      "active": false,
+      "subcategories": [
+        {
+          "name": "Sin clasificar",
+          "sortOrder": 0,
+          "groups": [
+            {
+              "code": "G237",
+              "name": "Sin clasificar",
+              "sortOrder": 0
+            },
+            {
+              "code": "G238",
+              "name": "Combos",
+              "sortOrder": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

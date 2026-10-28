@@ -14,7 +14,12 @@ import {
   type PushConfig,
 } from '@infrastructure/config';
 import { PrismaService } from '@infrastructure/database';
-import type { PrismaClient, Product, ProductImage } from '@prisma-client';
+import type {
+  PrismaClient,
+  Product,
+  ProductCategorization,
+  ProductImage,
+} from '@prisma-client';
 
 import {
   assertDistinctDatabases,
@@ -37,7 +42,9 @@ export interface CatalogPushSummary {
   manufacturers: EntityCounters;
   categories: EntityCounters;
   subcategories: EntityCounters;
+  groups: EntityCounters;
   products: EntityCounters;
+  categorizations: EntityCounters;
   images: EntityCounters;
   /** Productos que ya no existen en local y quedaron `active=false` allá. */
   productsDeactivated: number;
@@ -102,6 +109,16 @@ type RemoteProductData = Omit<
 
 /** Campos de imagen que viajan a destino (mismo criterio que arriba). */
 type RemoteImageData = Omit<ProductImage, 'id' | 'createdAt' | 'updatedAt'>;
+
+/** Traducción id local → id destino de cada catálogo ya publicado. */
+interface IdMaps {
+  suppliers: Map<number, number>;
+  brands: Map<number, number>;
+  manufacturers: Map<number, number>;
+  categories: Map<number, number>;
+  subcategories: Map<number, number>;
+  groups: Map<number, number>;
+}
 
 /**
  * Publicación del catálogo local hacia otra instancia (Railway).
@@ -176,7 +193,9 @@ export class CatalogPushService {
       manufacturers: emptyCounters(),
       categories: emptyCounters(),
       subcategories: emptyCounters(),
+      groups: emptyCounters(),
       products: emptyCounters(),
+      categorizations: emptyCounters(),
       images: emptyCounters(),
       productsDeactivated: 0,
       imagesRemoved: 0,
@@ -210,6 +229,11 @@ export class CatalogPushService {
           categoryIds,
           summary.subcategories,
         );
+        const groupIds = await this.pushGroups(
+          remote,
+          subcategoryIds,
+          summary.groups,
+        );
 
         await this.pushProducts(
           remote,
@@ -219,6 +243,7 @@ export class CatalogPushService {
             manufacturers: manufacturerIds,
             categories: categoryIds,
             subcategories: subcategoryIds,
+            groups: groupIds,
           },
           runDate,
           options,
@@ -291,6 +316,9 @@ export class CatalogPushService {
   private async assertRemoteSchemaReady(remote: PrismaClient): Promise<void> {
     try {
       await remote.product.count();
+      // Tabla más reciente: si falta, el destino quedó con un esquema anterior
+      // a la categorización y hay que desplegar la API antes de publicar.
+      await remote.productCategorization.count();
     } catch (error) {
       throw new Error(
         'La base destino no tiene el esquema del catálogo aplicado ' +
@@ -502,32 +530,57 @@ export class CatalogPushService {
   }
 
   /**
-   * Categorías, por `name`.
-   *
-   * Hoy el sync del DWH no las puebla (la categorización es una fase
-   * posterior), pero si alguien las cargó en local tienen que viajar: sin
-   * ellas, los productos con `categoryId` romperían la llave foránea en destino.
+   * Categorías, por `name`. Viajan con su slug, orden y visibilidad: la
+   * navegación pública se pinta con ellos, así que un cambio de orden o de
+   * visibilidad hecho en local tiene que llegar a destino.
    */
   private async pushCategories(
     remote: PrismaClient,
     counters: EntityCounters,
   ): Promise<Map<number, number>> {
+    const select = {
+      id: true,
+      name: true,
+      slug: true,
+      sortOrder: true,
+      active: true,
+    } as const;
     const locals = await this.local.category.findMany({
-      select: { id: true, name: true },
+      select,
       orderBy: { id: 'asc' },
     });
     counters.read = locals.length;
 
-    const remotes = await remote.category.findMany({
-      select: { id: true, name: true },
-    });
-    const existingNames = new Set(remotes.map((row) => row.name));
+    const byName = new Map(
+      (await remote.category.findMany({ select })).map((row) => [
+        row.name,
+        row,
+      ]),
+    );
 
-    const toCreate = locals
-      .filter((row) => !existingNames.has(row.name))
-      .map((row) => ({ name: row.name }));
-    counters.inserted = toCreate.length;
-    counters.unchanged = locals.length - toCreate.length;
+    const toCreate: Omit<(typeof locals)[number], 'id'>[] = [];
+    for (const local of locals) {
+      const data = {
+        name: local.name,
+        slug: local.slug,
+        sortOrder: local.sortOrder,
+        active: local.active,
+      };
+      const existing = byName.get(data.name);
+      if (!existing) {
+        toCreate.push(data);
+        counters.inserted += 1;
+      } else if (
+        existing.slug === data.slug &&
+        existing.sortOrder === data.sortOrder &&
+        existing.active === data.active
+      ) {
+        counters.unchanged += 1;
+      } else {
+        await remote.category.update({ where: { id: existing.id }, data });
+        counters.updated += 1;
+      }
+    }
 
     if (toCreate.length > 0) {
       await remote.category.createMany({
@@ -549,32 +602,59 @@ export class CatalogPushService {
     categoryIds: Map<number, number>,
     counters: EntityCounters,
   ): Promise<Map<number, number>> {
+    const select = {
+      id: true,
+      name: true,
+      slug: true,
+      categoryId: true,
+      sortOrder: true,
+      active: true,
+    } as const;
     const locals = await this.local.subcategory.findMany({
-      select: { id: true, name: true, categoryId: true },
+      select,
       orderBy: { id: 'asc' },
     });
     counters.read = locals.length;
 
-    const remotes = await remote.subcategory.findMany({
-      select: { id: true, name: true, categoryId: true },
-    });
+    const remotes = await remote.subcategory.findMany({ select });
     const key = (name: string, categoryId: number): string =>
       `${categoryId} ${name}`;
-    const existingKeys = new Set(
-      remotes.map((row) => key(row.name, row.categoryId)),
+    const existingByKey = new Map(
+      remotes.map((row) => [key(row.name, row.categoryId), row]),
     );
 
-    const toCreate: { name: string; categoryId: number }[] = [];
+    const toCreate: {
+      name: string;
+      slug: string;
+      categoryId: number;
+      sortOrder: number;
+      active: boolean;
+    }[] = [];
     for (const local of locals) {
       const remoteCategoryId = categoryIds.get(local.categoryId);
       if (remoteCategoryId === undefined) continue;
 
-      if (existingKeys.has(key(local.name, remoteCategoryId))) {
+      const data = {
+        name: local.name,
+        slug: local.slug,
+        categoryId: remoteCategoryId,
+        sortOrder: local.sortOrder,
+        active: local.active,
+      };
+      const existing = existingByKey.get(key(local.name, remoteCategoryId));
+      if (!existing) {
+        toCreate.push(data);
+        counters.inserted += 1;
+      } else if (
+        existing.slug === data.slug &&
+        existing.sortOrder === data.sortOrder &&
+        existing.active === data.active
+      ) {
         counters.unchanged += 1;
-        continue;
+      } else {
+        await remote.subcategory.update({ where: { id: existing.id }, data });
+        counters.updated += 1;
       }
-      toCreate.push({ name: local.name, categoryId: remoteCategoryId });
-      counters.inserted += 1;
     }
 
     if (toCreate.length > 0) {
@@ -598,17 +678,95 @@ export class CatalogPushService {
     });
   }
 
+  /** Grupos de producto, por `(name, subcategoryId)` ya traducido al de destino. */
+  private async pushGroups(
+    remote: PrismaClient,
+    subcategoryIds: Map<number, number>,
+    counters: EntityCounters,
+  ): Promise<Map<number, number>> {
+    const select = {
+      id: true,
+      name: true,
+      slug: true,
+      subcategoryId: true,
+      sortOrder: true,
+      active: true,
+    } as const;
+    const locals = await this.local.productGroup.findMany({
+      select,
+      orderBy: { id: 'asc' },
+    });
+    counters.read = locals.length;
+
+    const key = (name: string, subcategoryId: number): string =>
+      `${subcategoryId}:${name}`;
+    const existingByKey = new Map(
+      (await remote.productGroup.findMany({ select })).map((row) => [
+        key(row.name, row.subcategoryId),
+        row,
+      ]),
+    );
+
+    const toCreate: {
+      name: string;
+      slug: string;
+      subcategoryId: number;
+      sortOrder: number;
+      active: boolean;
+    }[] = [];
+    for (const local of locals) {
+      const remoteSubcategoryId = subcategoryIds.get(local.subcategoryId);
+      if (remoteSubcategoryId === undefined) continue;
+
+      const data = {
+        name: local.name,
+        slug: local.slug,
+        subcategoryId: remoteSubcategoryId,
+        sortOrder: local.sortOrder,
+        active: local.active,
+      };
+      const existing = existingByKey.get(key(local.name, remoteSubcategoryId));
+      if (!existing) {
+        toCreate.push(data);
+        counters.inserted += 1;
+      } else if (
+        existing.slug === data.slug &&
+        existing.sortOrder === data.sortOrder &&
+        existing.active === data.active
+      ) {
+        counters.unchanged += 1;
+      } else {
+        await remote.productGroup.update({ where: { id: existing.id }, data });
+        counters.updated += 1;
+      }
+    }
+
+    if (toCreate.length > 0) {
+      await remote.productGroup.createMany({
+        data: toCreate,
+        skipDuplicates: true,
+      });
+    }
+
+    const refreshed = await remote.productGroup.findMany({
+      select: { id: true, name: true, subcategoryId: true },
+    });
+    const remoteIdByKey = new Map(
+      refreshed.map((row) => [key(row.name, row.subcategoryId), row.id]),
+    );
+    return this.mapLocalToRemote(locals, (row) => {
+      const remoteSubcategoryId = subcategoryIds.get(row.subcategoryId);
+      return remoteSubcategoryId === undefined
+        ? undefined
+        : remoteIdByKey.get(key(row.name, remoteSubcategoryId));
+    });
+  }
+
   // -------------------------------------------------------------- productos
 
   private async pushProducts(
     remote: PrismaClient,
-    maps: {
-      suppliers: Map<number, number>;
-      brands: Map<number, number>;
-      manufacturers: Map<number, number>;
-      categories: Map<number, number>;
-      subcategories: Map<number, number>;
-    },
+    maps: IdMaps,
     runDate: Date,
     options: CatalogPushOptions,
     summary: CatalogPushSummary,
@@ -708,6 +866,14 @@ export class CatalogPushService {
         });
       }
 
+      // Después de los productos: la asignación apunta a `producto_key`.
+      await this.pushCategorizations(
+        remote,
+        keys,
+        maps,
+        summary.categorizations,
+      );
+
       if (!options.skipImages) {
         const remoteRows = await remote.product.findMany({
           where: { productoKey: { in: keys } },
@@ -728,6 +894,96 @@ export class CatalogPushService {
         `Productos publicados: ${counters.read}` +
           (options.limit === undefined ? '' : ` / ${options.limit}`),
       );
+    }
+  }
+
+  /**
+   * Asignaciones de categoría de un lote de productos, por `productoKey`.
+   *
+   * Es una tabla aparte de `products`, así que NO entra en el hash del
+   * producto: se compara campo a campo. Una asignación que cambia en local
+   * (reclasificación, corrección manual) llega a destino aunque el producto
+   * no se haya movido. Los productos sin asignación local no se tocan allá.
+   */
+  private async pushCategorizations(
+    remote: PrismaClient,
+    keys: string[],
+    maps: IdMaps,
+    counters: EntityCounters,
+  ): Promise<void> {
+    const locals = await this.local.productCategorization.findMany({
+      where: { productoKey: { in: keys } },
+    });
+    if (locals.length === 0) return;
+    counters.read += locals.length;
+
+    const remotes = await remote.productCategorization.findMany({
+      where: { productoKey: { in: keys } },
+    });
+    const remoteByKey = new Map(remotes.map((row) => [row.productoKey, row]));
+
+    const toCreate: Omit<
+      ProductCategorization,
+      'id' | 'classifiedAt' | 'updatedAt'
+    >[] = [];
+
+    for (const local of locals) {
+      const categoryId = maps.categories.get(local.categoryId);
+      const subcategoryId = maps.subcategories.get(local.subcategoryId);
+      const groupId = maps.groups.get(local.groupId);
+      if (
+        categoryId === undefined ||
+        subcategoryId === undefined ||
+        groupId === undefined
+      ) {
+        // Imposible salvo que la taxonomía cambie mientras corre el push.
+        this.logger.warn(
+          `Asignación de ${local.productoKey} omitida: su taxonomía no llegó a destino.`,
+        );
+        continue;
+      }
+
+      const data = {
+        productoKey: local.productoKey,
+        categoryId,
+        subcategoryId,
+        groupId,
+        source: local.source,
+        confidence: local.confidence,
+        locked: local.locked,
+        needsReview: local.needsReview,
+        signature: local.signature,
+      };
+      const existing = remoteByKey.get(local.productoKey);
+
+      if (!existing) {
+        toCreate.push(data);
+        counters.inserted += 1;
+      } else if (
+        existing.categoryId === data.categoryId &&
+        existing.subcategoryId === data.subcategoryId &&
+        existing.groupId === data.groupId &&
+        existing.source === data.source &&
+        existing.confidence === data.confidence &&
+        existing.locked === data.locked &&
+        existing.needsReview === data.needsReview &&
+        existing.signature === data.signature
+      ) {
+        counters.unchanged += 1;
+      } else {
+        await remote.productCategorization.update({
+          where: { id: existing.id },
+          data,
+        });
+        counters.updated += 1;
+      }
+    }
+
+    if (toCreate.length > 0) {
+      await remote.productCategorization.createMany({
+        data: toCreate,
+        skipDuplicates: true,
+      });
     }
   }
 
@@ -840,16 +1096,7 @@ export class CatalogPushService {
   }
 
   /** Traduce las llaves foráneas locales a los ids de la base destino. */
-  private mapProduct(
-    local: Product,
-    maps: {
-      suppliers: Map<number, number>;
-      brands: Map<number, number>;
-      manufacturers: Map<number, number>;
-      categories: Map<number, number>;
-      subcategories: Map<number, number>;
-    },
-  ): RemoteProductData {
+  private mapProduct(local: Product, maps: IdMaps): RemoteProductData {
     const supplierId = maps.suppliers.get(local.supplierId);
     if (supplierId === undefined) {
       // Imposible salvo que alguien inserte un proveedor mientras corre el

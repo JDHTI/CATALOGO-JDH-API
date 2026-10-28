@@ -38,7 +38,7 @@ La fuente es la vista **`consumo.productos`** del datawarehouse Postgres
 | `proveedor`           | `Supplier.name`                    |                                                           |
 | `fabricante`          | `Manufacturer.name` → `manufacturerId` | Trim; vacío → `null`.                                 |
 | `marca`               | `Brand.name` → `brandId`           | Trim; vacío → `null`.                                     |
-| `categoria`/`subcategoria` | — (todavía no)                | La categorización del catálogo se hará en fase posterior. |
+| `categoria`/`subcategoria` | — (no se leen)                | La categorización vive aparte (`product_categorizations`); ver [categorization.md](categorization.md). El sync la dispara al terminar. |
 | `linea`/`sublinea`/`grupo`/`origen` | mismos nombres      | Crudos del DWH, para trazabilidad.                        |
 | `peso`                | `pesoKg`                           | Decimal(12,3).                                            |
 | `factor_empaque`      | `factorEmpaque`                    | Decimal(12,3).                                            |
@@ -63,7 +63,7 @@ catálogo conserva los campos que se gestionan fuera del DWH:
 | `ProductImage` e imágenes | `images:ingest`; el sync de productos no toca filas ni referencias de imagen. |
 | `longDescription`, `seoTitle`, `seoDescription` | `product-content:import`; una sincronización DWH nunca los incluye en el update. |
 | `price`, `priceCurrency`, `priceUpdatedAt` | Flujo de precios futuro; actualmente el DWH no los provee. |
-| `categoryId`, `subcategoryId` | Categorización del catálogo; el DWH no los puebla. |
+| `categoryId`, `subcategoryId` | Columnas heredadas sin uso: la categoría vive en `product_categorizations` (ver [categorization.md](categorization.md)). |
 | `Supplier.logo*`, `Brand.logo*` | Gestión de logos; el upsert del DWH solo actualiza el nombre de la clasificación. |
 
 Para una fila existente, el servicio proyecta de forma explícita el conjunto de

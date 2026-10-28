@@ -133,7 +133,9 @@ interface FakeCatalog {
   manufacturer: FakeTable;
   category: FakeTable;
   subcategory: FakeTable;
+  productGroup: FakeTable;
   product: FakeTable;
+  productCategorization: FakeTable;
   productImage: FakeTable;
   syncRun: FakeTable;
   $connect: jest.Mock;
@@ -148,7 +150,9 @@ const buildCatalog = (
   manufacturer: new FakeTable(seed.manufacturer),
   category: new FakeTable(seed.category),
   subcategory: new FakeTable(seed.subcategory),
+  productGroup: new FakeTable(seed.productGroup),
   product: new FakeTable(seed.product),
+  productCategorization: new FakeTable(seed.productCategorization),
   productImage: new FakeTable(seed.productImage),
   syncRun: new FakeTable(seed.syncRun),
   $connect: jest.fn().mockResolvedValue(undefined),
@@ -341,6 +345,147 @@ describe('CatalogPushService', () => {
         expect.objectContaining({ id: 1, name: 'MARCA', slug: 'marca' }),
       ]);
       expect(summary.brands.updated).toBe(1);
+    });
+
+    /** Taxonomía mínima local + la asignación del producto KEY-1. */
+    const withCategorization = (local: FakeCatalog): void => {
+      local.category.rows.push({
+        id: 1,
+        name: 'Alimentos',
+        slug: 'alimentos',
+        sortOrder: 0,
+        active: true,
+      });
+      local.subcategory.rows.push({
+        id: 5,
+        name: 'Aceites y grasas',
+        slug: 'aceites-y-grasas',
+        categoryId: 1,
+        sortOrder: 0,
+        active: true,
+      });
+      local.productGroup.rows.push(
+        {
+          id: 9,
+          name: 'Aceites líquidos',
+          slug: 'aceites-liquidos',
+          subcategoryId: 5,
+          sortOrder: 0,
+          active: true,
+        },
+        {
+          id: 10,
+          name: 'Margarinas',
+          slug: 'margarinas',
+          subcategoryId: 5,
+          sortOrder: 1,
+          active: true,
+        },
+      );
+      local.productCategorization.rows.push({
+        id: 1,
+        productoKey: 'KEY-1',
+        categoryId: 1,
+        subcategoryId: 5,
+        groupId: 9,
+        source: 'propuesta',
+        confidence: 'alta',
+        locked: false,
+        needsReview: false,
+        signature: 'sig-1',
+      });
+    };
+
+    it('publica la taxonomía y la asignación con los ids de destino', async () => {
+      // El destino ya tiene otra categoría: los ids no coinciden.
+      const remote = buildCatalog({
+        category: [
+          {
+            id: 1,
+            name: 'PREEXISTENTE',
+            slug: 'preexistente',
+            sortOrder: 0,
+            active: true,
+          },
+        ],
+      });
+      const local = seedLocal();
+      local.product.rows[0].id = 1;
+      withCategorization(local);
+
+      const summary = await buildService(local, remote).run();
+
+      const category = remote.category.rows.find(
+        (r) => r.name === 'Alimentos',
+      )!;
+      const subcategory = remote.subcategory.rows[0];
+      const group = remote.productGroup.rows.find(
+        (r) => r.name === 'Aceites líquidos',
+      )!;
+      expect(category.id).not.toBe(1);
+      expect(subcategory).toMatchObject({
+        categoryId: category.id,
+        slug: 'aceites-y-grasas',
+      });
+      expect(group.subcategoryId).toBe(subcategory.id);
+      expect(remote.productCategorization.rows).toEqual([
+        expect.objectContaining({
+          productoKey: 'KEY-1',
+          categoryId: category.id,
+          subcategoryId: subcategory.id,
+          groupId: group.id,
+          source: 'propuesta',
+          signature: 'sig-1',
+        }),
+      ]);
+      expect(summary.categorizations.inserted).toBe(1);
+      expect(summary.groups.inserted).toBe(2);
+    });
+
+    it('una reclasificación local llega al destino aunque el producto no cambie', async () => {
+      const remote = buildCatalog();
+      const local = seedLocal();
+      local.product.rows[0].id = 1;
+      withCategorization(local);
+
+      await buildService(local, remote).run();
+      // El clasificador (o una persona) la mueve a otro grupo.
+      Object.assign(local.productCategorization.rows[0], {
+        groupId: 10,
+        source: 'manual',
+        locked: true,
+      });
+      const segunda = await buildService(local, remote).run();
+
+      expect(segunda.products.unchanged).toBe(1);
+      expect(segunda.categorizations.updated).toBe(1);
+      const margarinas = remote.productGroup.rows.find(
+        (r) => r.name === 'Margarinas',
+      )!;
+      expect(remote.productCategorization.rows[0]).toMatchObject({
+        groupId: margarinas.id,
+        source: 'manual',
+        locked: true,
+      });
+    });
+
+    it('republicar sin cambios no toca las asignaciones', async () => {
+      const remote = buildCatalog();
+      const local = seedLocal();
+      local.product.rows[0].id = 1;
+      withCategorization(local);
+
+      await buildService(local, remote).run();
+      const segunda = await buildService(local, remote).run();
+
+      expect(remote.productCategorization.rows).toHaveLength(1);
+      expect(segunda.categorizations).toMatchObject({
+        inserted: 0,
+        updated: 0,
+        unchanged: 1,
+      });
+      expect(segunda.categories.unchanged).toBe(1);
+      expect(segunda.groups.unchanged).toBe(2);
     });
 
     it('arrastra el logo del proveedor y las imágenes del producto', async () => {

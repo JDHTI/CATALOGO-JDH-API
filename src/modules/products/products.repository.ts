@@ -11,8 +11,12 @@ export type ProductWithRelations = Prisma.ProductGetPayload<{
     supplier: { select: { id: true; name: true } };
     brand: { select: { name: true } };
     manufacturer: { select: { name: true } };
-    category: { select: { id: true; name: true } };
-    subcategory: { select: { id: true; name: true } };
+    categorization: {
+      select: {
+        category: { select: { id: true; name: true; slug: true } };
+        subcategory: { select: { id: true; name: true; slug: true } };
+      };
+    };
     images: {
       select: {
         url: true;
@@ -36,8 +40,13 @@ export const PUBLIC_PRODUCT_INCLUDE = {
   supplier: { select: { id: true, name: true } },
   brand: { select: { name: true } },
   manufacturer: { select: { name: true } },
-  category: { select: { id: true, name: true } },
-  subcategory: { select: { id: true, name: true } },
+  // La categoría sale de la tabla de categorización, no de `products`.
+  categorization: {
+    select: {
+      category: { select: { id: true, name: true, slug: true } },
+      subcategory: { select: { id: true, name: true, slug: true } },
+    },
+  },
   // Primaria primero; el resto de la galería en orden de posición.
   images: {
     select: {
@@ -114,6 +123,17 @@ export class ProductsRepository {
       ? ProductsRepository.buildSearchWhere(search, query.searchMode)
       : undefined;
 
+    const categoryIds = query.categoryIds?.length
+      ? query.categoryIds
+      : query.categoryId
+        ? [query.categoryId]
+        : undefined;
+    const subcategoryIds = query.subcategoryIds?.length
+      ? query.subcategoryIds
+      : query.subcategoryId
+        ? [query.subcategoryId]
+        : undefined;
+
     return {
       active: true,
       ...(query.supplierIds?.length
@@ -126,6 +146,20 @@ export class ProductsRepository {
         : query.brandId
           ? { brandId: query.brandId }
           : {}),
+      // Un producto sin asignación (pendiente) no entra en ningún filtro de
+      // categoría, pero sigue saliendo en el listado sin filtrar.
+      ...(categoryIds || subcategoryIds
+        ? {
+            categorization: {
+              is: {
+                ...(categoryIds ? { categoryId: { in: categoryIds } } : {}),
+                ...(subcategoryIds
+                  ? { subcategoryId: { in: subcategoryIds } }
+                  : {}),
+              },
+            },
+          }
+        : {}),
       ...(searchWhere ? { OR: searchWhere } : {}),
     };
   }

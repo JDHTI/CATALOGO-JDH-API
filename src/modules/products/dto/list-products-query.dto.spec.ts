@@ -69,6 +69,29 @@ describe('filtros multiples', () => {
     expect(dto.supplierIds).toEqual([1, 2]);
     expect(dto.brandIds).toEqual([3, 4, 5]);
   });
+  it('acepta categorías y subcategorías en CSV o repetidas, y el singular', () => {
+    const dto = plainToInstance(ListProductsQueryDto, {
+      categoryIds: '1,2',
+      subcategoryIds: ['5', '6,7'],
+      categoryId: '3',
+      subcategoryId: '8',
+    });
+    expect(validateSync(dto)).toHaveLength(0);
+    expect(dto.categoryIds).toEqual([1, 2]);
+    expect(dto.subcategoryIds).toEqual([5, 6, 7]);
+    expect(dto.categoryId).toBe(3);
+    expect(dto.subcategoryId).toBe(8);
+  });
+  it.each(['', '1,', 'abc', '0', '-1', '1.5', []])(
+    'rechaza categoryIds invalidos: %j',
+    (value) => {
+      expect(
+        validateSync(
+          plainToInstance(ListProductsQueryDto, { categoryIds: value }),
+        ).length,
+      ).toBeGreaterThan(0);
+    },
+  );
   it.each(['', '1,', 'abc', '0', '-1', '1.5', []])(
     'rechaza IDs invalidos: %j',
     (value) => {

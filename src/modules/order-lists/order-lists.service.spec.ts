@@ -29,8 +29,7 @@ const product = {
   supplier: { id: 1, name: 'ACME' },
   brand: null,
   manufacturer: null,
-  category: null,
-  subcategory: null,
+  categorization: null,
   images: [],
 } as unknown as ProductWithRelations;
 
