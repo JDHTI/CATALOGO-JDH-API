@@ -24,8 +24,10 @@ Todas las **filas** del catálogo, en el orden que exigen las llaves foráneas:
 | `suppliers`     | `code`                   | Incluye `logo_object_key` / `logo_url`        |
 | `brands`        | `name`                   | Incluye `logo_object_key` / `logo_url`        |
 | `manufacturers` | `name`                   | Solo tienen nombre: nunca se actualizan       |
-| `categories`    | `name`                   | Hoy vacías; viajan por si se pueblan          |
+| `categories`    | `name`                   | Con slug, orden y visibilidad; se actualizan  |
 | `subcategories` | `(name, category)`       | Con la categoría ya traducida al id de destino |
+| `product_groups` | `(name, subcategory)`   | Con la subcategoría ya traducida al id de destino |
+| `product_categorizations` | `producto_key` | Tras los productos; comparadas campo a campo (fuera del hash del producto) |
 | `products`      | `producto_key`           | Detección de cambios por hash                 |
 | `product_images`| `(producto, posición)`   | Solo referencias, ver abajo                   |
 

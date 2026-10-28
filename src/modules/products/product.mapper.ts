@@ -1,4 +1,5 @@
 import {
+  CategoryRefDto,
   ProductImageDto,
   ProductResponseDto,
 } from './dto/product-response.dto';
@@ -30,15 +31,17 @@ export function toProductResponse(
     marcaId: product.brandId,
     fabricante: product.manufacturer?.name ?? null,
     proveedor: { id: product.supplier.id, nombre: product.supplier.name },
-    categoria: product.category
-      ? { id: product.category.id, nombre: product.category.name }
-      : null,
-    subcategoria: product.subcategory
-      ? { id: product.subcategory.id, nombre: product.subcategory.name }
-      : null,
+    categoria: toCategoryRef(product.categorization?.category),
+    subcategoria: toCategoryRef(product.categorization?.subcategory),
     imagenUrl: product.images[0]?.cardUrl ?? product.images[0]?.url ?? null,
     imagenes: product.images.map(toProductImageResponse),
   };
+}
+
+function toCategoryRef(
+  ref: { id: number; name: string; slug: string } | null | undefined,
+): CategoryRefDto | null {
+  return ref ? { id: ref.id, nombre: ref.name, slug: ref.slug } : null;
 }
 
 function toProductImageResponse(

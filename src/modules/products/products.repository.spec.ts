@@ -305,3 +305,67 @@ describe('filtros multiples y paginacion', () => {
     },
   );
 });
+
+describe('filtro por categoría y subcategoría', () => {
+  const whereOf = async (
+    query: Parameters<typeof listQuery>[0],
+  ): Promise<Record<string, unknown>> => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const repository = new ProductsRepository({
+      product: { findMany, count },
+    } as unknown as PrismaService);
+    await repository.findActivePage(listQuery(query));
+    const [args] = findMany.mock.calls[0] as [
+      { where: Record<string, unknown> },
+    ];
+    return args.where;
+  };
+
+  it('sin filtro de categoría no exige asignación (los pendientes siguen saliendo)', async () => {
+    expect(await whereOf({})).not.toHaveProperty('categorization');
+  });
+
+  it('filtra por categoría sobre la tabla de categorización', async () => {
+    expect(await whereOf({ categoryIds: [1, 2] })).toMatchObject({
+      active: true,
+      categorization: { is: { categoryId: { in: [1, 2] } } },
+    });
+  });
+
+  it('el plural tiene prioridad sobre el singular', async () => {
+    expect(await whereOf({ categoryIds: [1], categoryId: 9 })).toMatchObject({
+      categorization: { is: { categoryId: { in: [1] } } },
+    });
+    expect(await whereOf({ categoryId: 9 })).toMatchObject({
+      categorization: { is: { categoryId: { in: [9] } } },
+    });
+  });
+
+  it('categoría y subcategoría se combinan con AND sobre la misma asignación', async () => {
+    expect(
+      await whereOf({ categoryIds: [1], subcategoryIds: [5, 6] }),
+    ).toMatchObject({
+      categorization: {
+        is: { categoryId: { in: [1] }, subcategoryId: { in: [5, 6] } },
+      },
+    });
+  });
+
+  it('se combina con proveedor, marca y búsqueda', async () => {
+    const where = await whereOf({
+      subcategoryId: 5,
+      supplierIds: [3],
+      brandIds: [4],
+      search: 'arroz',
+    });
+
+    expect(where).toMatchObject({
+      active: true,
+      supplierId: { in: [3] },
+      brandId: { in: [4] },
+      categorization: { is: { subcategoryId: { in: [5] } } },
+    });
+    expect(where.OR).toBeInstanceOf(Array);
+  });
+});

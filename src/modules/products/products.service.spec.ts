@@ -20,8 +20,7 @@ const product = {
   brandId: 20,
   brand: { name: 'DeWalt' },
   manufacturer: null,
-  category: null,
-  subcategory: null,
+  categorization: null,
   images: [
     {
       url: 'http://minio/jdh-catalogo/p10/card.webp',

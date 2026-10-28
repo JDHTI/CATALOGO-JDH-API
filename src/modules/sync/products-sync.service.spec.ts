@@ -4,6 +4,7 @@ import type { ConfigService } from '@nestjs/config';
 import type { CacheService } from '@infrastructure/cache';
 import type { PrismaService } from '@infrastructure/database';
 import type { DatawarehouseService } from '@infrastructure/datawarehouse';
+import type { CategorizationService } from '@modules/categorization/categorization.service';
 
 import type { DwhProductRow } from './dwh-product-row.interface';
 import { ProductsSyncService } from './products-sync.service';
@@ -105,7 +106,11 @@ const buildService = (
   rows: DwhProductRow[],
   prisma: PrismaMock,
   dwhEnabled = true,
-): { service: ProductsSyncService; invalidateByPrefix: jest.Mock } => {
+): {
+  service: ProductsSyncService;
+  invalidateByPrefix: jest.Mock;
+  reconcile: jest.Mock;
+} => {
   const dwh = {
     enabled: dwhEnabled,
     stream: jest.fn(async function* (): AsyncGenerator<DwhProductRow[]> {
@@ -117,13 +122,15 @@ const buildService = (
   const invalidateByPrefix = jest.fn().mockResolvedValue(0);
   const cache = { invalidateByPrefix } as unknown as CacheService;
 
+  const reconcile = jest.fn().mockResolvedValue({});
   const service = new ProductsSyncService(
     dwh,
     prisma as unknown as PrismaService,
     cache,
     configService,
+    { reconcile } as unknown as CategorizationService,
   );
-  return { service, invalidateByPrefix };
+  return { service, invalidateByPrefix, reconcile };
 };
 
 describe('ProductsSyncService.cleanName', () => {
@@ -200,6 +207,28 @@ describe('ProductsSyncService', () => {
       expect.objectContaining({ where: { id: 7 }, data: successData }),
     );
     expect(invalidateByPrefix).toHaveBeenCalledWith('http:');
+  });
+
+  it('categoriza al terminar el sync', async () => {
+    const prisma = buildPrisma();
+    const { service, reconcile } = buildService([buildRow('k1')], prisma);
+
+    await service.run();
+
+    expect(reconcile).toHaveBeenCalledTimes(1);
+  });
+
+  it('un fallo de la categorización no hace fallar el sync ya completado', async () => {
+    const prisma = buildPrisma();
+    const { service, reconcile } = buildService([buildRow('k1')], prisma);
+    reconcile.mockRejectedValue(new Error('BD de categorías caída'));
+
+    await expect(service.run()).resolves.toMatchObject({ inserted: 1 });
+    expect(prisma.syncRun.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'error' }) as unknown,
+      }),
+    );
   });
 
   it('salta el update cuando el sourceHash no cambió (unchanged)', async () => {
@@ -350,14 +379,18 @@ describe('ProductsSyncService', () => {
     const cache = {
       invalidateByPrefix: jest.fn(),
     } as unknown as CacheService;
+    const reconcile = jest.fn();
     const service = new ProductsSyncService(
       dwh,
       prisma as unknown as PrismaService,
       cache,
       configService,
+      { reconcile } as unknown as CategorizationService,
     );
 
     await expect(service.run()).rejects.toThrow('timeout del DWH');
+    // Un sync fallido no categoriza: no hay nada nuevo que clasificar.
+    expect(reconcile).not.toHaveBeenCalled();
     const errorData: unknown = expect.objectContaining({
       status: 'error',
       error: 'timeout del DWH',

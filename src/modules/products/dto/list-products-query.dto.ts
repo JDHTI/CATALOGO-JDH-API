@@ -69,6 +69,56 @@ export class ListProductsQueryDto extends PaginationQueryDto {
   brandIds?: number[];
 
   @ApiPropertyOptional({
+    type: String,
+    description:
+      'IDs de categoría (de `GET /categories`) separados por coma; OR dentro ' +
+      'del grupo, AND entre grupos. Tiene prioridad sobre el ID singular.',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    (Array.isArray(value) ? value : [value]).flatMap((part: unknown) =>
+      typeof part === 'string' ? part.split(',').map(Number) : [part],
+    ),
+  )
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  categoryIds?: number[];
+
+  @ApiPropertyOptional({ description: 'Filtrar por categoría' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  categoryId?: number;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'IDs de subcategoría separados por coma; OR dentro del grupo, AND entre ' +
+      'grupos (y con `categoryIds`). Tiene prioridad sobre el ID singular.',
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    (Array.isArray(value) ? value : [value]).flatMap((part: unknown) =>
+      typeof part === 'string' ? part.split(',').map(Number) : [part],
+    ),
+  )
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  subcategoryIds?: number[];
+
+  @ApiPropertyOptional({ description: 'Filtrar por subcategoría' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  subcategoryId?: number;
+
+  @ApiPropertyOptional({
     description: 'Búsqueda case-insensitive sobre nombre, sku y marca',
   })
   @IsString()

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { CategorizationModule } from '@modules/categorization/categorization.module';
+
 import { ProductsSyncService } from './products-sync.service';
 
 /**
@@ -9,7 +11,7 @@ import { ProductsSyncService } from './products-sync.service';
  * (no hay auth todavía). El disparo manual es `pnpm sync:products`.
  */
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [ScheduleModule.forRoot(), CategorizationModule],
   providers: [ProductsSyncService],
   exports: [ProductsSyncService],
 })

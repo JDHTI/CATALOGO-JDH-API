@@ -28,6 +28,7 @@ import {
   brandSlugBase,
   planBrandSlugs,
 } from '@modules/brands/brand-slug';
+import { CategorizationService } from '@modules/categorization/categorization.service';
 import type { Prisma } from '@prisma-client';
 
 import type { DwhProductRow } from './dwh-product-row.interface';
@@ -130,6 +131,7 @@ export class ProductsSyncService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
     configService: ConfigService,
+    private readonly categorization: CategorizationService,
   ) {
     this.config = configService.getOrThrow<SyncConfig>(SYNC_CONFIG);
   }
@@ -249,6 +251,10 @@ export class ProductsSyncService implements OnModuleInit {
         // Las claves del HttpCacheInterceptor empiezan por "http:".
         await this.cache.invalidateByPrefix('http:');
       }
+
+      // Productos nuevos o movidos por el ERP: se categorizan en la misma
+      // corrida, para no esperar a la siguiente.
+      await this.reconcileCategorization();
 
       const summary: ProductsSyncSummary = {
         runId: run.id,
@@ -434,6 +440,21 @@ export class ProductsSyncService implements OnModuleInit {
       });
       return id;
     });
+  }
+
+  /**
+   * La categorización va después del sync y nunca puede hacerlo fallar: el
+   * catálogo ya quedó al día, y lo que no se clasifique ahora se reintenta en
+   * la siguiente corrida (o con `pnpm categorization reconcile`).
+   */
+  private async reconcileCategorization(): Promise<void> {
+    try {
+      await this.categorization.reconcile();
+    } catch (error) {
+      this.logger.error(
+        `Categorización fallida (el sync sí terminó): ${(error as Error).message}`,
+      );
+    }
   }
 
   /**

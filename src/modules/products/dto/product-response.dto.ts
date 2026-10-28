@@ -9,6 +9,12 @@ export class NamedRefDto {
   nombre!: string;
 }
 
+/** Categoría o subcategoría del producto, con el slug para armar URLs. */
+export class CategoryRefDto extends NamedRefDto {
+  @ApiProperty({ example: 'aceites-y-grasas' })
+  slug!: string;
+}
+
 /** Una imagen de la galería del producto, en sus 3 variantes WebP. */
 export class ProductImageDto {
   @ApiProperty({ example: 'http://cdn/products/392/22837/abcd1234/thumb.webp' })
@@ -102,11 +108,15 @@ export class ProductResponseDto {
   @ApiProperty({ type: NamedRefDto })
   proveedor!: NamedRefDto;
 
-  @ApiProperty({ type: NamedRefDto, nullable: true })
-  categoria!: NamedRefDto | null;
+  @ApiProperty({
+    type: CategoryRefDto,
+    nullable: true,
+    description: 'Null mientras el producto no tenga categoría asignada',
+  })
+  categoria!: CategoryRefDto | null;
 
-  @ApiProperty({ type: NamedRefDto, nullable: true })
-  subcategoria!: NamedRefDto | null;
+  @ApiProperty({ type: CategoryRefDto, nullable: true })
+  subcategoria!: CategoryRefDto | null;
 
   @ApiProperty({
     nullable: true,

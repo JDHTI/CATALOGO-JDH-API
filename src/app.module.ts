@@ -5,6 +5,7 @@ import { RateLimitModule } from '@common/ratelimit';
 import { InfrastructureModule } from '@infrastructure/infrastructure.module';
 import { BrandMediaModule } from '@modules/brand-media/brand-media.module';
 import { BrandsModule } from '@modules/brands/brands.module';
+import { CategoriesModule } from '@modules/categories/categories.module';
 import { FavoritesModule } from '@modules/favorites/favorites.module';
 import { HealthModule } from '@modules/health/health.module';
 import { LogosModule } from '@modules/logos/logos.module';
@@ -23,6 +24,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     HealthModule,
     SuppliersModule,
     BrandsModule,
+    CategoriesModule,
     ProductsModule,
     FavoritesModule,
     OrderListsModule,

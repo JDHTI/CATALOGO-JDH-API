@@ -6,12 +6,12 @@
 generator client {
   // Prisma resuelve includes con JOIN en PostgreSQL y evita viajes por relación.
   previewFeatures = ["relationJoins"]
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
   // NestJS compila a CommonJS; sin esto el cliente se genera como ESM
   // y falla al ejecutarse desde dist.
-  runtime      = "nodejs"
-  moduleFormat = "cjs"
+  runtime         = "nodejs"
+  moduleFormat    = "cjs"
 }
 
 datasource db {
@@ -78,31 +78,143 @@ model Brand {
   @@map("brands")
 }
 
-/// Categoría del catálogo. Solo esquema base: la categorización de productos
-/// se hará en una fase posterior (el sync NO la puebla todavía).
+// =============================================================================
+// CATEGORIZACIÓN
+//
+// Taxonomía de tres niveles (categoría → subcategoría → grupo) y asignación
+// producto → grupo en una tabla PROPIA (`product_categorizations`), separada de
+// `products`: el sync del DWH nunca la lee ni la escribe, así que sobrevive a
+// altas, cambios y activaciones/desactivaciones. Ver docs/categorization.md.
+// =============================================================================
+
+/// Categoría del catálogo (primer nivel de la taxonomía).
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  /// Identificador público para URLs (/categorias/{slug}).
+  slug      String   @unique
+  /// Posición en la navegación (ascendente).
+  sortOrder Int      @default(0) @map("sort_order")
+  /// `false` la oculta de la navegación pública (`GET /categories`); los
+  /// productos conservan su asignación.
+  active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  subcategories Subcategory[]
-  products      Product[]
+  subcategories   Subcategory[]
+  /// Relación heredada: `products.category_id` ya no se usa (la fuente de
+  /// verdad es `product_categorizations`).
+  products        Product[]
+  categorizations ProductCategorization[]
 
   @@map("categories")
 }
 
-/// Subcategoría, única por nombre dentro de su categoría.
+/// Subcategoría (segundo nivel), única por nombre dentro de su categoría.
 model Subcategory {
-  id         Int    @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   name       String
-  categoryId Int    @map("category_id")
+  slug       String
+  categoryId Int     @map("category_id")
+  sortOrder  Int     @default(0) @map("sort_order")
+  active     Boolean @default(true)
 
-  category Category  @relation(fields: [categoryId], references: [id])
-  products Product[]
+  category        Category                @relation(fields: [categoryId], references: [id])
+  groups          ProductGroup[]
+  /// Relación heredada, ver `Category.products`.
+  products        Product[]
+  categorizations ProductCategorization[]
 
   @@unique([name, categoryId])
+  @@unique([slug, categoryId])
   @@map("subcategories")
+}
+
+/// Grupo de producto (tercer nivel): el tipo de producto concreto. Es el nivel
+/// al que apuntan las reglas de clasificación; la UI pública solo expone
+/// categoría y subcategoría.
+model ProductGroup {
+  id            Int     @id @default(autoincrement())
+  name          String
+  slug          String
+  subcategoryId Int     @map("subcategory_id")
+  sortOrder     Int     @default(0) @map("sort_order")
+  active        Boolean @default(true)
+
+  subcategory     Subcategory             @relation(fields: [subcategoryId], references: [id])
+  categorizations ProductCategorization[]
+  rules           CategorizationRule[]
+
+  @@unique([name, subcategoryId])
+  @@unique([slug, subcategoryId])
+  @@map("product_groups")
+}
+
+/// Asignación de un producto a un grupo. Tabla independiente de `products`:
+///
+/// - Se une por `producto_key` (el hash estable del DWH), no por el id local.
+/// - Solo existe fila cuando el producto está clasificado; sin fila = pendiente.
+/// - `category_id` / `subcategory_id` repiten la jerarquía del grupo a
+///   propósito: son la columna de filtrado del listado público.
+/// - `ON DELETE CASCADE`: el sync desactiva productos, nunca los borra; solo una
+///   limpieza manual arrastraría la asignación.
+model ProductCategorization {
+  id          Int    @id @default(autoincrement())
+  productoKey String @unique @map("producto_key")
+
+  categoryId    Int @map("category_id")
+  subcategoryId Int @map("subcategory_id")
+  groupId       Int @map("group_id")
+
+  /// 'propuesta' (carga inicial revisada) | 'regla' (clasificador automático)
+  /// | 'manual' (asignada por una persona).
+  source      String
+  /// 'alta' | 'media' | 'baja'.
+  confidence  String
+  /// Las asignaciones bloqueadas (las manuales) no las toca ningún proceso
+  /// automático, ni aunque el ERP cambie la clasificación del producto.
+  locked      Boolean @default(false)
+  /// Pendiente de revisión humana (confianza baja o cambio no resuelto).
+  needsReview Boolean @default(false) @map("needs_review")
+  /// Hash de la clasificación cruda del ERP (línea/sublínea/grupo/tipo) con la
+  /// que se decidió. Si cambia, la asignación automática se reevalúa.
+  signature   String
+
+  classifiedAt DateTime @default(now()) @map("classified_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  product     Product      @relation(fields: [productoKey], references: [productoKey], onDelete: Cascade, onUpdate: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id])
+  subcategory Subcategory  @relation(fields: [subcategoryId], references: [id])
+  group       ProductGroup @relation(fields: [groupId], references: [id])
+
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([groupId])
+  @@index([needsReview])
+  @@map("product_categorizations")
+}
+
+/// Regla aprendida de las asignaciones revisadas: dada la clasificación cruda
+/// del ERP (y la primera palabra del nombre), a qué grupo va un producto
+/// nuevo. Se regeneran con `pnpm categorization learn`; no viajan al push.
+model CategorizationRule {
+  id        Int      @id @default(autoincrement())
+  /// 'lsg_w' | 'lsg' | 'g_w' | 'w' (de más a menos específica).
+  kind      String
+  /// Clave normalizada (minúsculas, sin acentos) según el `kind`.
+  ruleKey   String   @map("rule_key")
+  groupId   Int      @map("group_id")
+  /// Productos de entrenamiento que respaldan la regla y su pureza (0–1).
+  support   Int
+  purity    Decimal  @db.Decimal(5, 4)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group ProductGroup @relation(fields: [groupId], references: [id])
+
+  @@unique([kind, ruleKey])
+  @@index([groupId])
+  @@map("categorization_rules")
 }
 
 /// Producto del catálogo.
@@ -124,10 +236,10 @@ model Product {
   /// lotes revisados (ver docs/product-content-migration.md).
   longDescription String? @map("long_description") @db.Text
   /// Título SEO editorial, normalmente de 50–65 caracteres.
-  seoTitle       String? @map("seo_title")
+  seoTitle        String? @map("seo_title")
   /// Descripción SEO editorial para metadatos y snippets, normalmente hasta
   /// 160 caracteres. No se deriva automáticamente del nombre del producto.
-  seoDescription String? @map("seo_description")
+  seoDescription  String? @map("seo_description")
 
   // Clasificación cruda del DWH, conservada tal cual para trazabilidad.
   tipoItem String? @map("tipo_item")
@@ -146,6 +258,9 @@ model Product {
   supplierId     Int  @map("supplier_id")
   brandId        Int? @map("brand_id")
   manufacturerId Int? @map("manufacturer_id")
+  /// Heredadas y sin uso: la categoría del producto vive en
+  /// `product_categorizations`. Se conservan para no borrar columnas en la
+  /// misma migración; se pueden retirar después.
   categoryId     Int? @map("category_id")
   subcategoryId  Int? @map("subcategory_id")
 
@@ -165,14 +280,15 @@ model Product {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  supplier     Supplier       @relation(fields: [supplierId], references: [id])
-  brand        Brand?         @relation(fields: [brandId], references: [id])
-  manufacturer Manufacturer?  @relation(fields: [manufacturerId], references: [id])
-  category     Category?      @relation(fields: [categoryId], references: [id])
-  subcategory  Subcategory?   @relation(fields: [subcategoryId], references: [id])
-  images       ProductImage[]
-  favorites    Favorite[]
+  supplier       Supplier               @relation(fields: [supplierId], references: [id])
+  brand          Brand?                 @relation(fields: [brandId], references: [id])
+  manufacturer   Manufacturer?          @relation(fields: [manufacturerId], references: [id])
+  category       Category?              @relation(fields: [categoryId], references: [id])
+  subcategory    Subcategory?           @relation(fields: [subcategoryId], references: [id])
+  images         ProductImage[]
+  favorites      Favorite[]
   orderListItems OrderListItem[]
+  categorization ProductCategorization?
 
   @@index([supplierId])
   @@index([brandId])
@@ -190,8 +306,8 @@ model Product {
 /// configurado; aquí solo se guarda la referencia. Se pueblan con
 /// `pnpm images:ingest` (ver docs/product-images.md).
 model ProductImage {
-  id        Int    @id @default(autoincrement())
-  productId Int    @map("product_id")
+  id        Int @id @default(autoincrement())
+  productId Int @map("product_id")
 
   /// Prefijo base del objeto en el bucket, sin extensión ni variante
   /// (p. ej. `products/{supplierCode}/{sku}/{hash8}`). Las tres variantes
