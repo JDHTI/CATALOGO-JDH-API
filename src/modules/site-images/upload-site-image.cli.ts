@@ -124,7 +124,11 @@ async function main(): Promise<void> {
             contenido,
             nombre,
           );
-          resultado.reemplazo ? reemplazadas++ : cargadas++;
+          if (resultado.reemplazo) {
+            reemplazadas++;
+          } else {
+            cargadas++;
+          }
           logger.log(
             `${resultado.reemplazo ? 'Reemplazada' : 'Cargada'}: ${nombre} -> ${resultado.url}`,
           );
