@@ -23,12 +23,39 @@ pnpm site-images:upload -- --categoria=banners --slug=home-top-mobile --archivo=
 - Formatos de entrada: PNG, JPG/JPEG, WebP, GIF, TIFF, AVIF.
 - Volver a correrlo con la misma `categoria`+`slug` **reemplaza** el archivo.
 
+## Cargar una carpeta completa
+
+```bash
+pnpm site-images:upload -- --categoria=banners --dir=./entradas/site/banners
+```
+
+Sube cada imagen admitida que encuentre directamente dentro de `--dir` (no
+recursivo). El `slug` de cada una sale de su propio nombre de archivo (sin
+extensión, normalizado igual que `--slug`), así que **renombrar el archivo
+antes de subirlo** es la forma de fijar el placement final. Volver a correr
+el comando con archivos del mismo nombre reemplaza esas imágenes; un archivo
+nuevo se agrega sin tocar los demás. Al final se muestra un resumen
+(nuevas/reemplazadas/fallidas) y el comando falla (exit code 1) si alguna
+carga individual falló, aunque el resto sí se haya subido.
+
 ## Layout del bucket
 
 ```
 site/hero/{slug}.webp
 site/banners/{slug}.webp
 ```
+
+### Convención de `banners`: slug = slug de categoría
+
+Para que el frontend pueda resolver el banner de una categoría sin mantener
+un mapeo aparte, el `slug` de cada banner **es el mismo `slug` de la
+categoría** (ver `GET /api/v1/categories`), por ejemplo
+`site/banners/mascotas.webp` para la categoría `mascotas`. Así el frontend
+arma la key en base a la categoría activa y la pide directamente.
+
+Caso especial: `site/banners/general.webp` es el banner por defecto (no
+está atado a ninguna categoría) — se usa fuera de una categoría específica,
+p. ej. en el home o el catálogo completo.
 
 ## Caché
 

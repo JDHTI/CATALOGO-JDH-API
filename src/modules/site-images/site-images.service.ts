@@ -11,7 +11,7 @@ import { SiteImageProcessorService } from './site-image-processor.service';
 export const SITE_IMAGE_CATEGORIES = ['hero', 'banners'] as const;
 export type SiteImageCategory = (typeof SITE_IMAGE_CATEGORIES)[number];
 
-const SOURCE_EXTENSIONS = new Set([
+export const SITE_IMAGE_SOURCE_EXTENSIONS = new Set([
   '.png',
   '.jpg',
   '.jpeg',
@@ -51,9 +51,9 @@ export class SiteImagesService {
     sourceFilename: string,
   ): Promise<SiteImageUploadResult> {
     const extension = extname(sourceFilename).toLowerCase();
-    if (!SOURCE_EXTENSIONS.has(extension)) {
+    if (!SITE_IMAGE_SOURCE_EXTENSIONS.has(extension)) {
       throw new Error(
-        `Extensión no soportada: "${extension}". Admitidas: ${[...SOURCE_EXTENSIONS].join(', ')}`,
+        `Extensión no soportada: "${extension}". Admitidas: ${[...SITE_IMAGE_SOURCE_EXTENSIONS].join(', ')}`,
       );
     }
 
