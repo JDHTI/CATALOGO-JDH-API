@@ -67,7 +67,9 @@ services:
       target: runtime
       args:
         # NEXT_PUBLIC_* se incrustan en el bundle: cambiarlas exige rebuild.
-        NEXT_PUBLIC_API_URL: https://${TIENDA_HOST}/api/v1
+        # Relativa: el navegador la completa con el origen por el que entró
+        # (IP, nombre .local o público). El SSR usa BACKEND_API_URL.
+        NEXT_PUBLIC_API_URL: /api/v1
         NEXT_PUBLIC_SITE_URL: https://${TIENDA_HOST}
         NEXT_PUBLIC_ASSETS_CDN_URL: https://${TIENDA_HOST}/media
         # El bucket vive en un host de la LAN (alias de Caddy → IP privada de

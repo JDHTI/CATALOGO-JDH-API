@@ -9,6 +9,9 @@
 # La raíz tiene name constraints: solo puede firmar *.jdh.local.
 
 {
+	# TEMPORAL: sin redirección http -> https mientras el certificado no está
+	# distribuido. Quitar junto con el `http://` del sitio.
+	auto_https disable_redirects
 	# No intentar instalar la raíz en el almacén de confianza del contenedor.
 	skip_install_trust
 	pki {
@@ -34,7 +37,9 @@
 	log
 }
 
-{$TIENDA_HOST} {
+# `http://` sin host: atiende por http cualquier nombre o IP (red interna e
+# internet). El https sigue solo para TIENDA_HOST, con la CA interna.
+{$TIENDA_HOST}, http:// {
 	tls internal
 	import common
 
