@@ -89,6 +89,25 @@ else
   echo "  ✗ /media respondió $code (se esperaba 200/403/404)" >&2; ok=1
 fi
 
+# Nombre público (certificado ACME, no la CA interna): solo aviso. Un fallo de
+# DNS, puertos o límite de Let's Encrypt no debe tumbar el despliegue, pero sí
+# dejar rastro, porque sin él el callback de Entra no funciona.
+if [[ -n ${PUBLIC_HOST:-} ]]; then
+  pub_ok=0
+  for _ in $(seq 1 20); do
+    if curl -fsS --resolve "$PUBLIC_HOST:$HTTPS_PORT:127.0.0.1" \
+      "https://$PUBLIC_HOST/api/health" >/dev/null 2>&1; then
+      pub_ok=1; break
+    fi
+    sleep 3
+  done
+  if [[ $pub_ok -eq 1 ]]; then
+    echo "  ✓ Nombre público https://$PUBLIC_HOST (certificado válido)"
+  else
+    echo "  ⚠ https://$PUBLIC_HOST sin certificado válido: revisar DNS público, puertos 80/443 y 'docker logs tienda-caddy'" >&2
+  fi
+fi
+
 if [[ $ok -ne 0 ]]; then
   "${COMPOSE[@]}" ps
   echo "Revisar: ${COMPOSE[*]} logs --tail 100 <servicio>" >&2

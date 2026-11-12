@@ -7,6 +7,12 @@
 # servidor de la intranet: copiar su root.crt y root.key a deploy/caddy/ca/ en
 # vez de correr init-ca.sh (ver deploy/README.md → Requisitos externos).
 # La raíz tiene name constraints: solo puede firmar *.jdh.local.
+#
+# Nombre público (PUBLIC_HOST, p. ej. tienda.jdh.com.co): la CA interna NO puede
+# firmarlo, así que ese sitio va SIN `tls internal` y Caddy pide un certificado
+# público por ACME (Let's Encrypt). Requiere el DNS público apuntando a este
+# servidor y los puertos 80 y 443 llegando a Caddy (el reto es HTTP-01). Sin
+# PUBLIC_HOST el sitio cae en `localhost` y no hace nada útil.
 
 {
 	# TEMPORAL: sin redirección http -> https mientras el certificado no está
@@ -37,10 +43,8 @@
 	log
 }
 
-# `http://` sin host: atiende por http cualquier nombre o IP (red interna e
-# internet). El https sigue solo para TIENDA_HOST, con la CA interna.
-{$TIENDA_HOST}, http:// {
-	tls internal
+# Rutas del catálogo, compartidas por el sitio interno y el público.
+(tienda) {
 	import common
 
 	# API pública del catálogo: la llama el navegador (NEXT_PUBLIC_API_URL).
@@ -72,4 +76,16 @@
 	handle {
 		reverse_proxy ui:3000
 	}
+}
+
+# `http://` sin host: atiende por http cualquier nombre o IP (red interna e
+# internet). El https de este sitio es solo para TIENDA_HOST, con la CA interna.
+{$TIENDA_HOST}, http:// {
+	tls internal
+	import tienda
+}
+
+# Nombre público: certificado público por ACME (ver nota de arriba).
+{$PUBLIC_HOST:localhost} {
+	import tienda
 }

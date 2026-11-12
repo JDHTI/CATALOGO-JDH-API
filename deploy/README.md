@@ -130,6 +130,24 @@ código ≠ 0 y muestra `compose ps`.
 > (`compose.prod.yaml` → `ui.build.args`, derivadas de `TIENDA_HOST`). Cambiar
 > el dominio exige `deploy.sh ui`, no basta reiniciar.
 
+### Nombre público (`PUBLIC_HOST`)
+
+La CA interna tiene name constraints (`*.jdh.local`), así que no puede firmar
+un dominio como `tienda.jdh.com.co`. Con `PUBLIC_HOST=tienda.jdh.com.co` en
+`deploy/.env`:
+
+- Caddy sirve ese nombre **sin `tls internal`** y pide el certificado por ACME
+  (Let's Encrypt, reto HTTP-01): el DNS público debe apuntar al servidor y los
+  puertos 80 y 443 deben llegar a Caddy.
+- Pasa a ser el dominio canónico: `BETTER_AUTH_URL`, `NEXT_PUBLIC_SITE_URL`,
+  `/media` y el callback de Entra
+  (`https://<PUBLIC_HOST>/api/auth/callback/microsoft`).
+- `TIENDA_HOST` sigue sirviéndose con la CA interna; `deploy.sh` verifica por
+  ahí y, además, avisa (sin fallar) si el nombre público no tiene certificado.
+
+Orden: poner `PUBLIC_HOST` en `deploy/.env` → `deploy.sh ui api` (recrea Caddy
+con el sitio nuevo; `NEXT_PUBLIC_*` exige rebuild de la UI).
+
 ## CI/CD
 
 Mismo patrón que la intranet. Cada repo tiene `.github/workflows/ci-cd.yml`:

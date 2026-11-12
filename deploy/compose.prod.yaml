@@ -45,6 +45,7 @@ services:
       - '${HTTPS_PORT:-443}:443/udp'
     environment:
       TIENDA_HOST: ${TIENDA_HOST}
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
       S3_BUCKET: ${S3_BUCKET}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -58,6 +59,9 @@ services:
         # red de Docker ni depender del DNS corporativo (SSR + /_next/image).
         aliases:
           - ${TIENDA_HOST}
+          # Con PUBLIC_HOST la UI se llama a sí misma por el nombre público:
+          # sin este alias saldría a la IP pública de la VM (hairpin NAT).
+          - ${PUBLIC_HOST:-localhost}
     logging: *logging
 
   # ── Frontend Next.js (catálogo + servidor de autenticación) ────────────
@@ -70,8 +74,9 @@ services:
         # Relativa: el navegador la completa con el origen por el que entró
         # (IP, nombre .local o público). El SSR usa BACKEND_API_URL.
         NEXT_PUBLIC_API_URL: /api/v1
-        NEXT_PUBLIC_SITE_URL: https://${TIENDA_HOST}
-        NEXT_PUBLIC_ASSETS_CDN_URL: https://${TIENDA_HOST}/media
+        # Dominio canónico: PUBLIC_HOST si existe; si no, TIENDA_HOST.
+        NEXT_PUBLIC_SITE_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}
+        NEXT_PUBLIC_ASSETS_CDN_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}/media
         # El bucket vive en un host de la LAN (alias de Caddy → IP privada de
         # Docker): Next 16 bloquea por defecto optimizar imágenes de IPs
         # locales (SSRF). Aquí es el comportamiento correcto, no un riesgo.
@@ -80,7 +85,8 @@ services:
     container_name: tienda-ui
     restart: unless-stopped
     environment:
-      BETTER_AUTH_URL: https://${TIENDA_HOST}
+      # Base del callback de Entra: https://<dominio canónico>/api/auth/callback/microsoft
+      BETTER_AUTH_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       DATABASE_URL: *auth-database-url
       AUTH_MICROSOFT_ENTRA_ID_ID: ${AUTH_MICROSOFT_ENTRA_ID_ID}
@@ -151,7 +157,7 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
       S3_FORCE_PATH_STYLE: 'true'
       # URL pública de los objetos (Caddy /media → bucket).
-      S3_PUBLIC_URL: https://${TIENDA_HOST}/media
+      S3_PUBLIC_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}/media
       # JWKS de la UI por la red interna (sin TLS ni CA). El `iss`/`aud` del
       # token son identificadores lógicos y no dependen de esta URL.
       AUTH_JWKS_URL: http://ui:3000/api/auth/jwks
