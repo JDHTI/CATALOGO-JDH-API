@@ -139,9 +139,13 @@ un dominio como `tienda.jdh.com.co`. Con `PUBLIC_HOST=tienda.jdh.com.co` en
 - Caddy sirve ese nombre **sin `tls internal`** y pide el certificado por ACME
   (Let's Encrypt, reto HTTP-01): el DNS público debe apuntar al servidor y los
   puertos 80 y 443 deben llegar a Caddy.
-- Pasa a ser el dominio canónico: `BETTER_AUTH_URL`, `NEXT_PUBLIC_SITE_URL`,
-  `/media` y el callback de Entra
-  (`https://<PUBLIC_HOST>/api/auth/callback/microsoft`).
+- Pasa a ser el dominio canónico: `BETTER_AUTH_URL`, `NEXT_PUBLIC_SITE_URL` y
+  el callback de Entra (`https://<PUBLIC_HOST>/api/auth/callback/microsoft`).
+- **`/media` no**: `NEXT_PUBLIC_ASSETS_CDN_URL` y `S3_PUBLIC_URL` se quedan en
+  `TIENDA_HOST`. Lo pide siempre el servidor de la UI (HEAD del hero y banners,
+  `/_next/image`), que confía en la CA interna pero no tiene por qué tener un
+  certificado público para el nombre público. Con `PUBLIC_HOST` ahí, mientras
+  el reto ACME falla, la home pierde hero, banners e imágenes (TLS interno).
 - `TIENDA_HOST` sigue sirviéndose con la CA interna; `deploy.sh` verifica por
   ahí y, además, avisa (sin fallar) si el nombre público no tiene certificado.
 

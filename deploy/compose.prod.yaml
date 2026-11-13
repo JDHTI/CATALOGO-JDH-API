@@ -74,9 +74,16 @@ services:
         # Relativa: el navegador la completa con el origen por el que entró
         # (IP, nombre .local o público). El SSR usa BACKEND_API_URL.
         NEXT_PUBLIC_API_URL: /api/v1
-        # Dominio canónico: PUBLIC_HOST si existe; si no, TIENDA_HOST.
+        # Dominio canónico (el del navegador): PUBLIC_HOST si existe; si no,
+        # TIENDA_HOST.
         NEXT_PUBLIC_SITE_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}
-        NEXT_PUBLIC_ASSETS_CDN_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}/media
+        # /media se pide SIEMPRE desde el servidor (HEAD del hero y banners,
+        # descarga de /_next/image), nunca desde el navegador. Va por TIENDA_HOST:
+        # su certificado es de la CA interna, en la que confía NODE_EXTRA_CA_CERTS.
+        # Con PUBLIC_HOST, Caddy no tiene certificado público mientras el reto ACME
+        # no pase, y esas descargas fallan con ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR
+        # (sin hero, banners ni imágenes de la home).
+        NEXT_PUBLIC_ASSETS_CDN_URL: https://${TIENDA_HOST}/media
         # El bucket vive en un host de la LAN (alias de Caddy → IP privada de
         # Docker): Next 16 bloquea por defecto optimizar imágenes de IPs
         # locales (SSRF). Aquí es el comportamiento correcto, no un riesgo.
@@ -157,7 +164,8 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
       S3_FORCE_PATH_STYLE: 'true'
       # URL pública de los objetos (Caddy /media → bucket).
-      S3_PUBLIC_URL: https://${PUBLIC_HOST:-${TIENDA_HOST}}/media
+      # Mismo host que NEXT_PUBLIC_ASSETS_CDN_URL de la UI (ver ui.build.args).
+      S3_PUBLIC_URL: https://${TIENDA_HOST}/media
       # JWKS de la UI por la red interna (sin TLS ni CA). El `iss`/`aud` del
       # token son identificadores lógicos y no dependen de esta URL.
       AUTH_JWKS_URL: http://ui:3000/api/auth/jwks
