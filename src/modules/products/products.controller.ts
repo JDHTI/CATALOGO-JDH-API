@@ -5,9 +5,11 @@ import {
   Param,
   ParseIntPipe,
   Query,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -17,8 +19,10 @@ import {
 import {
   CacheTTL,
   HttpCacheInterceptor,
+  OptionalJwtAuthGuard,
   type PaginatedResult,
 } from '@common/index';
+import { EmployeePriceInterceptor } from '@modules/product-prices/employee-price.interceptor';
 
 import { FeaturedProductsQueryDto } from './dto/featured-products-query.dto';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
@@ -27,7 +31,12 @@ import { ProductsService } from './products.service';
 
 @ApiTags('products')
 @Controller('products')
-@UseInterceptors(HttpCacheInterceptor)
+// Público, con token OPCIONAL: un empleado JDH autenticado recibe además
+// `precioEmpleado`. El orden de los interceptores importa: el de precios va
+// por fuera de la caché para que Redis solo guarde la respuesta anónima.
+@ApiBearerAuth()
+@UseGuards(OptionalJwtAuthGuard)
+@UseInterceptors(EmployeePriceInterceptor, HttpCacheInterceptor)
 export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 

@@ -13,6 +13,7 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,6 +29,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CurrentUser, JwtAuthGuard, PaginationQueryDto } from '@common/index';
+import { EmployeePriceInterceptor } from '@modules/product-prices/employee-price.interceptor';
 
 import { CreateOrderListDto } from './dto/create-order-list.dto';
 import {
@@ -78,6 +80,8 @@ export class OrderListsController {
 
   @Get(':listId/items')
   @Header('Cache-Control', 'private, no-store')
+  // Un empleado JDH recibe `product.precioEmpleado` en cada línea.
+  @UseInterceptors(EmployeePriceInterceptor)
   @ApiOperation({
     summary: 'Lista los productos de un borrador',
     description:

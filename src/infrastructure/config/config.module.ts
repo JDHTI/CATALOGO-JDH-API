@@ -5,6 +5,7 @@ import appConfig from './app.config';
 import authConfig from './auth.config';
 import databaseConfig from './database.config';
 import datawarehouseConfig from './datawarehouse.config';
+import mailConfig from './mail.config';
 import pushConfig from './push.config';
 import ratelimitConfig from './ratelimit.config';
 import redisConfig from './redis.config';
@@ -28,6 +29,7 @@ import { validateEnv } from './env.validation';
         authConfig,
         databaseConfig,
         datawarehouseConfig,
+        mailConfig,
         pushConfig,
         ratelimitConfig,
         redisConfig,

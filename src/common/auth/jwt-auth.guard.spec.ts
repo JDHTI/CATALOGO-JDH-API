@@ -6,6 +6,7 @@ import type { AuthConfig } from '@infrastructure/config';
 
 import type { AuthenticatedRequest } from './authenticated-request';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard';
 
 const JWKS_URL = 'https://ui.jdh.test/api/auth/jwks';
 const ISSUER = 'jdh-catalogo-ui';
@@ -80,7 +81,83 @@ describe('JwtAuthGuard', () => {
     const { context, request } = buildContext(`Bearer ${await signToken()}`);
 
     await expect(buildGuard().canActivate(context)).resolves.toBe(true);
-    expect(request.user).toEqual({ sub: 'usuario-opaco-123' });
+    expect(request.user).toEqual({
+      sub: 'usuario-opaco-123',
+      empleado: false,
+    });
+  });
+
+  it.each([
+    [true, true],
+    [false, false],
+    ['true', false],
+    [1, false],
+  ])(
+    'claim empleado=%p → empleado %p (solo cuenta el true literal)',
+    async (claim, expected) => {
+      const token = await new SignJWT({ empleado: claim })
+        .setProtectedHeader({ alg: 'EdDSA', kid: KID })
+        .setSubject('usuario-opaco-123')
+        .setIssuer(ISSUER)
+        .setAudience(AUDIENCE)
+        .setExpirationTime('5m')
+        .sign(keys.privateKey);
+      const { context, request } = buildContext(`Bearer ${token}`);
+
+      await buildGuard().canActivate(context);
+      expect(request.user?.empleado).toBe(expected);
+    },
+  );
+
+  describe('OptionalJwtAuthGuard', () => {
+    const buildOptional = (auth: Partial<AuthConfig> = {}) =>
+      new OptionalJwtAuthGuard({
+        getOrThrow: (): AuthConfig => ({
+          jwksUrl: JWKS_URL,
+          issuer: ISSUER,
+          audience: AUDIENCE,
+          ...auth,
+        }),
+      } as unknown as ConfigService);
+
+    it('deja pasar sin token como anónimo', async () => {
+      const { context, request } = buildContext(undefined);
+
+      await expect(buildOptional().canActivate(context)).resolves.toBe(true);
+      expect(request.user).toBeUndefined();
+    });
+
+    it('identifica al usuario con un token válido', async () => {
+      const { context, request } = buildContext(`Bearer ${await signToken()}`);
+
+      await expect(buildOptional().canActivate(context)).resolves.toBe(true);
+      expect(request.user?.sub).toBe('usuario-opaco-123');
+    });
+
+    it('responde 401 con un token inválido', async () => {
+      const token = await signToken({ audience: 'otro' });
+      const { context } = buildContext(`Bearer ${token}`);
+
+      await expect(buildOptional().canActivate(context)).rejects.toMatchObject({
+        status: 401,
+      });
+    });
+
+    it('atiende como anónimo si el JWKS no responde o no está configurado', async () => {
+      const token = await signToken();
+      global.fetch = jest.fn().mockRejectedValue(new TypeError('fetch failed'));
+      const caido = buildContext(`Bearer ${token}`);
+      const sinConfig = buildContext(`Bearer ${token}`);
+
+      await expect(buildOptional().canActivate(caido.context)).resolves.toBe(
+        true,
+      );
+      await expect(
+        buildOptional({ jwksUrl: undefined }).canActivate(sinConfig.context),
+      ).resolves.toBe(true);
+      expect(caido.request.user).toBeUndefined();
+      expect(sinConfig.request.user).toBeUndefined();
+    });
   });
 
   it('rechaza un token emitido para otra audiencia', async () => {

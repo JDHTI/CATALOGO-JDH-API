@@ -70,3 +70,6 @@ docker/env/*.env
 # despliegue (tienda.jdh.local): secretos y CA propia, nunca versionados
 /deploy/.env
 /deploy/caddy/ca/
+
+# listas de precios recibidas de la intranet (datos internos, cambian a diario)
+/data/precios/
