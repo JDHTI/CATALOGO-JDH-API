@@ -22,6 +22,8 @@
     "db:studio": "prisma studio",
     "sync:products": "nest build && node dist/src/modules/sync/sync-products.cli",
     "categorization": "nest build && node dist/src/modules/categorization/categorization.cli",
+    "prices:load": "nest build && node dist/src/modules/product-prices/load-prices.cli",
+    "orders:resend-email": "nest build && node dist/src/modules/cart/resend-order-email.cli",
     "push:catalogo": "nest build && node dist/src/modules/push/push-catalog.cli",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

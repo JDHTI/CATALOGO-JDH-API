@@ -288,6 +288,8 @@ model Product {
   images         ProductImage[]
   favorites      Favorite[]
   orderListItems OrderListItem[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
   categorization ProductCategorization?
 
   @@index([supplierId])
@@ -413,6 +415,156 @@ model OrderListItem {
   @@index([productId])
   @@index([orderListId, createdAt, productId])
   @@map("order_list_items")
+}
+
+// =============================================================================
+// LISTAS DE PRECIOS
+//
+// Precios que llegan de fuera del DWH (hoy: la lista de empleados JDH que
+// calcula la intranet). Tabla PROPIA, separada de `products`: el sync del DWH
+// nunca la lee ni la escribe. Ver docs/product-prices.md.
+// =============================================================================
+
+/// Precio de un SKU dentro de una lista. La fila existe mientras el SKU venga
+/// en la última carga de su lista; el cargador quita las que dejan de venir.
+model ProductListPrice {
+  id   Int    @id @default(autoincrement())
+  /// Lista a la que pertenece (p. ej. 'empleados-jdh').
+  list String
+  /// SKU tal como lo envía la fuente.
+  sku  String
+
+  /// Producto del catálogo resuelto por SKU al cargar. `null` si el SKU no
+  /// existe en el catálogo o si coincide con más de un producto (el SKU no es
+  /// único entre compañías): en ese caso el precio no se muestra en ninguno.
+  /// Se une por `producto_key` (estable frente al sync), sin FK: el producto
+  /// puede no existir todavía.
+  productoKey String? @map("producto_key")
+
+  /// Unidad de inventario a la que corresponde el precio (p. ej. 'UNIDAD').
+  inventoryUnit String?  @map("inventory_unit")
+  /// Precio sin IVA, en pesos enteros.
+  price         Decimal  @db.Decimal(14, 2)
+  /// Porcentaje de IVA. 0 = sin IVA (se factura al 0 %); `null` = tasa
+  /// desconocida en la fuente (precio con IVA = precio, «IVA por confirmar").
+  /// Son cosas distintas y nunca se confunden.
+  vatPct        Decimal? @map("vat_pct") @db.Decimal(5, 2)
+  /// Etiqueta de la fuente ("IVA 19 %", "Sin IVA"); `null` si no la trae.
+  vatLabel      String?  @map("vat_label")
+  priceWithVat  Decimal  @map("price_with_vat") @db.Decimal(14, 2)
+  currency      String   @default("COP")
+
+  /// Cuándo generó la fuente el archivo y fecha de la foto de costos.
+  generatedAt  DateTime @map("generated_at")
+  snapshotDate DateTime @map("snapshot_date") @db.Date
+  /// Última carga que confirmó la fila (cambie o no el precio).
+  loadedAt     DateTime @map("loaded_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  /// Último cambio real de la fila (precio, IVA, unidad o producto resuelto).
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([list, sku])
+  @@index([list, productoKey])
+  @@map("product_list_prices")
+}
+
+// =============================================================================
+// CARRITO Y PEDIDOS (empleados JDH)
+//
+// Un carrito por usuario (`sub` del JWT, string opaco como en favoritos). Los
+// precios NO se guardan en el carrito: se calculan con la lista vigente en
+// cada lectura; la línea solo recuerda el precio con el que se agregó para
+// avisar si cambió. El pedido sí congela precio, IVA y totales. Ver
+// docs/carrito-pedidos.md.
+// =============================================================================
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  cartId    String @map("cart_id")
+  productId Int    @map("product_id")
+  quantity  Int
+
+  /// Precio sin IVA e IVA % de la lista cuando la línea se agregó o se
+  /// cambió su cantidad por última vez. Solo para avisar de un cambio.
+  addedPrice  Decimal? @map("added_price") @db.Decimal(14, 2)
+  addedVatPct Decimal? @map("added_vat_pct") @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([cartId, productId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+/// Pedido enviado. Inmutable salvo el estado del correo.
+model Order {
+  id     String @id @default(cuid())
+  /// Consecutivo legible para el correo y la UI (PED-000123).
+  number Int    @unique @default(autoincrement())
+  userId String @map("user_id")
+
+  /// Nombre y correo del empleado tal como los firma la UI (Entra).
+  customerName  String  @map("customer_name")
+  customerEmail String  @map("customer_email")
+  note          String? @db.VarChar(500)
+
+  /// Lista de precios con la que se calculó y fecha de su foto de costos.
+  priceList    String   @map("price_list")
+  snapshotDate DateTime @map("snapshot_date") @db.Date
+
+  subtotal          Decimal @db.Decimal(14, 2)
+  taxes             Decimal @db.Decimal(14, 2)
+  total             Decimal @db.Decimal(14, 2)
+  /// Hay líneas con IVA desconocido (no sumadas en `taxes`).
+  hasUnconfirmedVat Boolean @default(false) @map("has_unconfirmed_vat")
+
+  /// 'pendiente' | 'enviado' | 'error' | 'deshabilitado' (sin credenciales).
+  emailStatus String    @default("pendiente") @map("email_status")
+  emailError  String?   @map("email_error")
+  emailSentAt DateTime? @map("email_sent_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  items OrderItem[]
+
+  @@index([userId, createdAt])
+  @@map("orders")
+}
+
+/// Línea del pedido con todo congelado (sku y nombre incluidos): el pedido no
+/// depende de que el producto o la lista cambien después.
+model OrderItem {
+  orderId   String @map("order_id")
+  productId Int    @map("product_id")
+  sku       String
+  name      String
+  quantity  Int
+
+  unitPrice Decimal  @map("unit_price") @db.Decimal(14, 2)
+  vatPct    Decimal? @map("vat_pct") @db.Decimal(5, 2)
+  base      Decimal  @db.Decimal(14, 2)
+  vat       Decimal  @db.Decimal(14, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([orderId, productId])
+  @@index([productId])
+  @@map("order_items")
 }
 
 /// Registro de cada ejecución de sincronización, para observabilidad.

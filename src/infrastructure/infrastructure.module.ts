@@ -4,6 +4,7 @@ import { CacheModule } from './cache';
 import { ConfigModule } from './config';
 import { DatawarehouseModule } from './datawarehouse';
 import { PrismaModule } from './database';
+import { MailModule } from './mail';
 import { StorageModule } from './storage';
 
 /**
@@ -18,6 +19,7 @@ import { StorageModule } from './storage';
     DatawarehouseModule,
     CacheModule,
     StorageModule,
+    MailModule,
   ],
 })
 export class InfrastructureModule {}

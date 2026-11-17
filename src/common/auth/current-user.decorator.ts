@@ -4,7 +4,10 @@ import {
   type ExecutionContext,
 } from '@nestjs/common';
 
-import type { AuthenticatedRequest } from './authenticated-request';
+import type {
+  AuthenticatedRequest,
+  AuthenticatedUser,
+} from './authenticated-request';
 
 /**
  * Inyecta el `sub` del JWT verificado.
@@ -25,5 +28,21 @@ export const CurrentUser = createParamDecorator(
     }
 
     return sub;
+  },
+);
+
+/**
+ * Inyecta la identidad completa verificada (`sub`, `empleado`, `name`,
+ * `email`). Mismas reglas que `@CurrentUser()`: solo detrás de `JwtAuthGuard`.
+ */
+export const CurrentIdentity = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): AuthenticatedUser => {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    if (!request.user?.sub) {
+      throw new InternalServerErrorException(
+        'Ruta con @CurrentIdentity() pero sin JwtAuthGuard',
+      );
+    }
+    return request.user;
   },
 );

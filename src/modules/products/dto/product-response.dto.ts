@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /** Referencia con nombre, para proveedor/categoría/subcategoría. */
 export class NamedRefDto {
@@ -55,11 +55,50 @@ export class ProductSeoDto {
   description!: string | null;
 }
 
+/** Precio de la lista de empleados JDH (costo MDE1 / (1 − margen)). */
+export class EmployeePriceDto {
+  @ApiProperty({ example: 49863, description: 'Precio sin IVA, en pesos' })
+  precio!: number;
+
+  @ApiProperty({ example: 59337, description: 'Precio con IVA, en pesos' })
+  precioConIva!: number;
+
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    example: 19,
+    description:
+      'IVA en % (19, 5 o 0). 0 = Sin IVA (se factura al 0 %). null = tasa ' +
+      'desconocida en la fuente (precioConIva = precio): mostrar «IVA por ' +
+      'confirmar», nunca «Sin IVA».',
+  })
+  ivaPct!: number | null;
+
+  @ApiProperty({
+    example: 'IVA 19 %',
+    description: '«IVA 19 %», «IVA 5 %», «Sin IVA» o «IVA por confirmar»',
+  })
+  ivaEtiqueta!: string;
+
+  @ApiProperty({ example: 'COP' })
+  moneda!: string;
+
+  @ApiProperty({ nullable: true, type: String, example: 'UNIDAD' })
+  unidad!: string | null;
+
+  @ApiProperty({
+    example: '2026-11-17',
+    description: 'Fecha de la foto de costos (YYYY-MM-DD)',
+  })
+  fechaFoto!: string;
+}
+
 /**
  * Producto tal como lo consume la UI del catálogo.
  * Contrato base confirmado con la UI; los campos editoriales son una extensión
  * aditiva y nullable para permitir la migración progresiva.
- * No expone `activo` ni precios (los precios aún no existen en el catálogo).
+ * No expone `activo`. El único precio es `precioEmpleado`, y solo para
+ * empleados JDH autenticados.
  */
 export class ProductResponseDto {
   @ApiProperty({ example: 10 })
@@ -129,4 +168,15 @@ export class ProductResponseDto {
 
   @ApiProperty({ type: [ProductImageDto] })
   imagenes!: ProductImageDto[];
+
+  @ApiPropertyOptional({
+    type: EmployeePriceDto,
+    nullable: true,
+    description:
+      'Solo en `/products` (listado, destacados y ficha) y solo para un ' +
+      'empleado JDH autenticado (JWT con `empleado: true`): el precio de la ' +
+      'lista de empleados, o null si el producto no está en ella. Para ' +
+      'cualquier otro visitante el campo NO viene.',
+  })
+  precioEmpleado?: EmployeePriceDto | null;
 }

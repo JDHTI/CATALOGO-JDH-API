@@ -6,11 +6,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createRemoteJWKSet, errors, jwtVerify } from 'jose';
+import { createRemoteJWKSet, errors, jwtVerify, type JWTPayload } from 'jose';
 
 import { AUTH_CONFIG, type AuthConfig } from '@infrastructure/config';
 
-import type { AuthenticatedRequest } from './authenticated-request';
+import type {
+  AuthenticatedRequest,
+  AuthenticatedUser,
+} from './authenticated-request';
 
 /** Único algoritmo aceptado: Ed25519 asimétrico (la UI firma, este API solo verifica). */
 const ALGORITHMS = ['EdDSA'];
@@ -38,8 +41,8 @@ const CLOCK_TOLERANCE_SECONDS = 30;
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  private readonly auth: AuthConfig;
-  private readonly jwks?: ReturnType<typeof createRemoteJWKSet>;
+  protected readonly auth: AuthConfig;
+  protected readonly jwks?: ReturnType<typeof createRemoteJWKSet>;
 
   constructor(config: ConfigService) {
     this.auth = config.getOrThrow<AuthConfig>(AUTH_CONFIG);
@@ -66,31 +69,48 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Falta el token de autenticación');
     }
 
-    let sub: string | undefined;
+    request.user = await this.verify(token, this.jwks);
+    return true;
+  }
+
+  /**
+   * Verifica firma, emisor, audiencia y caducidad y devuelve la identidad.
+   * Lanza 401 si el token no vale y 503 si el JWKS no responde.
+   */
+  protected async verify(
+    token: string,
+    jwks: ReturnType<typeof createRemoteJWKSet>,
+  ): Promise<AuthenticatedUser> {
+    let payload: JWTPayload;
     try {
       // `audience` no es opcional: sin verificarla, un token emitido para otro
       // consumidor de la misma UI valdría aquí.
-      const { payload } = await jwtVerify(token, this.jwks, {
+      ({ payload } = await jwtVerify(token, jwks, {
         issuer: this.auth.issuer,
         audience: this.auth.audience,
         algorithms: ALGORITHMS,
         clockTolerance: CLOCK_TOLERANCE_SECONDS,
-      });
-      sub = payload.sub;
+      }));
     } catch (error) {
       throw JwtAuthGuard.toHttpError(error);
     }
 
-    if (!sub) {
+    if (!payload.sub) {
       throw new UnauthorizedException('El token no identifica a un usuario');
     }
 
-    request.user = { sub };
-    return true;
+    // Solo `true` literal: la UI lo pone únicamente en sesiones de Entra
+    // (tenant JDH). Ausente, `false` o cualquier otro valor = no empleado.
+    return {
+      sub: payload.sub,
+      empleado: payload.empleado === true,
+      ...optionalText('name', payload.name),
+      ...optionalText('email', payload.email),
+    };
   }
 
   /** `Authorization: Bearer <token>` → token, o `null` si no viene así. */
-  private static extractBearer(header?: string): string | null {
+  protected static extractBearer(header?: string): string | null {
     if (!header) return null;
     const [scheme, value] = header.split(' ');
     if (scheme?.toLowerCase() !== 'bearer' || !value) return null;
@@ -104,7 +124,7 @@ export class JwtAuthGuard implements CanActivate {
    * sigue siendo bueno y devolver 401 provocaría un cierre de sesión en
    * cascada por un fallo que no es suyo.
    */
-  private static toHttpError(error: unknown): Error {
+  protected static toHttpError(error: unknown): Error {
     const isVerificationFailure =
       error instanceof errors.JOSEError && error.code !== 'ERR_JWKS_TIMEOUT';
 
@@ -114,4 +134,13 @@ export class JwtAuthGuard implements CanActivate {
           'No se pudo verificar el token: JWKS inalcanzable',
         );
   }
+}
+
+/** `{ [key]: valor }` si el claim es un texto no vacío; `{}` si no. */
+function optionalText<K extends string>(
+  key: K,
+  value: unknown,
+): Partial<Record<K, string>> {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return text ? ({ [key]: text } as Record<K, string>) : {};
 }

@@ -8,6 +8,7 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -25,6 +26,7 @@ import {
   PaginationQueryDto,
   type PaginatedResult,
 } from '@common/index';
+import { EmployeePriceInterceptor } from '@modules/product-prices/employee-price.interceptor';
 import type { ProductResponseDto } from '@modules/products/dto/product-response.dto';
 
 import {
@@ -58,6 +60,9 @@ export class FavoritesController {
 
   @Get()
   @Header('Cache-Control', 'private, no-store')
+  // Un empleado JDH recibe `precioEmpleado` en cada producto, igual que en
+  // `/products`.
+  @UseInterceptors(EmployeePriceInterceptor)
   @ApiOperation({
     summary: 'Listado paginado de los favoritos del usuario',
     description:
