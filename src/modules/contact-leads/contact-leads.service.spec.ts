@@ -30,13 +30,13 @@ describe('ContactLeadsService', () => {
     return { service: new ContactLeadsService(repository), upsertByCorreo };
   };
 
-  it('guarda el contacto con la evidencia de la autorización y devuelve el id', async () => {
+  it('guarda el contacto con la evidencia de la autorización y no devuelve el id', async () => {
     const { service, upsertByCorreo } = build();
     const before = Date.now();
 
     await expect(
       service.upsert(dto, { ip: '190.1.2.3', userAgent: 'Mozilla/5.0' }),
-    ).resolves.toEqual({ id: 7 });
+    ).resolves.toEqual({ ok: true });
 
     const data = upsertByCorreo.mock.calls[0][0];
     expect(data).toMatchObject({

@@ -41,7 +41,9 @@ contra `BACKEND_API_URL`.
 
 ### Respuestas
 
-- `201 { "id": number }`, también cuando el correo ya existía.
+- `201 { "ok": true }`, también cuando el correo ya existía. No devuelve el
+  id: en un upsert sería el id viejo (menor que los nuevos) y dejaría ver que
+  el correo ya estaba registrado.
 - `400` con el formato del filtro global: `{ statusCode, message, error, path, timestamp }`;
   `message` es un arreglo con los errores de validación.
 - `429` cuando la IP supera la cuota (con `Retry-After`).

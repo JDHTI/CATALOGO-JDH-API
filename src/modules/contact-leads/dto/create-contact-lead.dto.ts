@@ -154,7 +154,11 @@ export class CreateContactLeadDto {
   origen!: string;
 }
 
+/**
+ * Sin id a propósito: un upsert devolvería el id viejo y dejaría ver que el
+ * correo ya estaba registrado.
+ */
 export class ContactLeadCreatedDto {
-  @ApiProperty({ example: 17 })
-  id!: number;
+  @ApiProperty({ enum: [true], example: true })
+  ok!: true;
 }
