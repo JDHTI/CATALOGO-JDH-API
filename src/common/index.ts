@@ -1,6 +1,7 @@
 export * from './auth';
 export * from './constants/app.constants';
 export * from './decorators/cache.decorators';
+export * from './decorators/rate-limit.decorator';
 export * from './dto/pagination-query.dto';
 export * from './filters/all-exceptions.filter';
 export * from './guards/rate-limit.guard';
