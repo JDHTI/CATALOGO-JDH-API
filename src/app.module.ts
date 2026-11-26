@@ -7,6 +7,7 @@ import { BrandMediaModule } from '@modules/brand-media/brand-media.module';
 import { BrandsModule } from '@modules/brands/brands.module';
 import { CartModule } from '@modules/cart/cart.module';
 import { CategoriesModule } from '@modules/categories/categories.module';
+import { ContactLeadsModule } from '@modules/contact-leads/contact-leads.module';
 import { FavoritesModule } from '@modules/favorites/favorites.module';
 import { HealthModule } from '@modules/health/health.module';
 import { LogosModule } from '@modules/logos/logos.module';
@@ -30,6 +31,7 @@ import { SyncModule } from '@modules/sync/sync.module';
     FavoritesModule,
     OrderListsModule,
     CartModule,
+    ContactLeadsModule,
     SyncModule,
     LogosModule,
     ProductImagesModule,

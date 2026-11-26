@@ -10,6 +10,12 @@ export interface RateLimitResult {
   resetSeconds: number;
 }
 
+/** Cuota de una ventana fija: `max` peticiones cada `ttl` segundos. */
+export interface RateLimitWindow {
+  ttl: number;
+  max: number;
+}
+
 /**
  * Contrato del limitador de peticiones.
  * La implementación decide el almacenamiento y el algoritmo; los consumidores
@@ -18,9 +24,10 @@ export interface RateLimitResult {
 export interface RateLimiter {
   /**
    * Registra un intento para la clave dada (normalmente la IP del cliente)
-   * y devuelve el estado del límite tras contabilizarlo.
+   * y devuelve el estado del límite tras contabilizarlo. Sin `window` se usa
+   * la cuota global (`RATE_LIMIT_TTL` / `RATE_LIMIT_MAX`).
    */
-  consume(key: string): Promise<RateLimitResult>;
+  consume(key: string, window?: RateLimitWindow): Promise<RateLimitResult>;
 }
 
 /** Token de inyección del limitador de peticiones. */

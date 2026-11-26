@@ -7,7 +7,11 @@ import {
   type RateLimitConfig,
 } from '@infrastructure/config';
 
-import type { RateLimiter, RateLimitResult } from './rate-limiter.interface';
+import type {
+  RateLimiter,
+  RateLimitResult,
+  RateLimitWindow,
+} from './rate-limiter.interface';
 
 /**
  * Script Lua de ventana fija: INCR + EXPIRE en una sola operación atómica.
@@ -49,20 +53,25 @@ export class RedisRateLimiterService implements RateLimiter {
     this.max = rateLimit.max;
   }
 
-  async consume(key: string): Promise<RateLimitResult> {
+  async consume(
+    key: string,
+    window?: RateLimitWindow,
+  ): Promise<RateLimitResult> {
+    const ttl = window?.ttl ?? this.ttl;
+    const max = window?.max ?? this.max;
     try {
       // ioredis aplica el keyPrefix configurado también a las KEYS de EVAL.
       const [count, ttlRemaining] = (await this.cache.raw.eval(
         FIXED_WINDOW_SCRIPT,
         1,
         `ratelimit:${key}`,
-        this.ttl,
+        ttl,
       )) as [number, number];
 
       return {
-        allowed: count <= this.max,
-        limit: this.max,
-        remaining: Math.max(this.max - count, 0),
+        allowed: count <= max,
+        limit: max,
+        remaining: Math.max(max - count, 0),
         resetSeconds: ttlRemaining,
       };
     } catch (error) {
@@ -73,8 +82,8 @@ export class RedisRateLimiterService implements RateLimiter {
       }
       return {
         allowed: true,
-        limit: this.max,
-        remaining: this.max,
+        limit: max,
+        remaining: max,
         resetSeconds: 0,
       };
     }

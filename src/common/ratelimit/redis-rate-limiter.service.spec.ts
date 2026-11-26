@@ -61,4 +61,27 @@ describe('RedisRateLimiterService', () => {
       60,
     );
   });
+
+  it('aplica la ventana propia de una ruta en vez de la global', async () => {
+    const evalMock = jest.fn().mockResolvedValue([6, 300]);
+    const service = buildService(evalMock);
+
+    const result = await service.consume('contact-leads:10.0.0.1', {
+      ttl: 600,
+      max: 5,
+    });
+
+    expect(evalMock).toHaveBeenCalledWith(
+      expect.any(String),
+      1,
+      'ratelimit:contact-leads:10.0.0.1',
+      600,
+    );
+    expect(result).toEqual({
+      allowed: false,
+      limit: 5,
+      remaining: 0,
+      resetSeconds: 300,
+    });
+  });
 });
