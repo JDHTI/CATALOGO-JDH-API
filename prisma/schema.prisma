@@ -567,6 +567,40 @@ model OrderItem {
   @@map("order_items")
 }
 
+// =============================================================================
+// CONTACTOS (formulario público de la home)
+//
+// Un registro por correo: si la persona vuelve a enviar el formulario se
+// actualizan sus datos. Guarda la autorización de tratamiento de datos
+// (Ley 1581) con fecha, IP y user agent. Ver docs/contact-leads.md.
+// =============================================================================
+
+model ContactLead {
+  id                 Int     @id @default(autoincrement())
+  nombre             String  @db.VarChar(120)
+  /// En minúsculas.
+  correo             String  @unique @db.VarChar(254)
+  /// 10 dígitos, sin +57.
+  celular            String  @db.VarChar(10)
+  ciudad             String  @db.VarChar(80)
+  /// 'NIT' | 'CC', o null si no dio identificación.
+  tipoIdentificacion String? @map("tipo_identificacion") @db.VarChar(3)
+  /// Solo dígitos; un NIT puede traer el DV tras un guion (900123456-7).
+  identificacion     String? @db.VarChar(17)
+  /// Formulario de origen (p. ej. 'home-newsletter').
+  origen             String  @db.VarChar(40)
+
+  /// Última vez que aceptó el tratamiento de datos.
+  aceptaTratamientoAt DateTime @map("acepta_tratamiento_at") @db.Timestamptz(3)
+  ip                  String?  @db.VarChar(45)
+  userAgent           String?  @map("user_agent") @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("contact_leads")
+}
+
 /// Registro de cada ejecución de sincronización, para observabilidad.
 model SyncRun {
   id          Int       @id @default(autoincrement())
